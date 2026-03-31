@@ -24,6 +24,13 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
+  // Fecha o menu automaticamente no mobile ao carregar
+  React.useEffect(() => {
+    if (window.innerWidth <= 768) {
+      setIsSidebarOpen(false);
+    }
+  }, []);
+
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { name: 'Mural de Avisos', icon: ImageIcon, path: '/admin/mural' },
@@ -56,6 +63,9 @@ export default function AdminLayout({
               <Link 
                 key={item.name} 
                 href={item.path} 
+                onClick={() => {
+                  if (window.innerWidth <= 768) setIsSidebarOpen(false);
+                }}
                 className={`${styles.navItem} ${isActive ? styles.active : ''}`}
               >
                 <item.icon size={22} />
@@ -73,12 +83,28 @@ export default function AdminLayout({
         </div>
       </aside>
 
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className={styles.mobileOverlay} 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+
       {/* Main Content Area */}
       <main className={styles.main}>
         <header className={styles.topHeader}>
-          <div className={styles.welcome}>
-            <h1>Painel Administrativo</h1>
-            <p>Bem-vindo à gestão do IPIC CONECTA</p>
+          <div className={styles.headerLeft}>
+            <button 
+              className={styles.mobileMenuBtn} 
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+            <div className={styles.welcome}>
+              <h1>Painel Administrativo</h1>
+              <p>Gestão do IPIC CONECTA</p>
+            </div>
           </div>
           <div className={styles.userProfile}>
             <div className={styles.userInfo}>

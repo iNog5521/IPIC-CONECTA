@@ -32,17 +32,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(fbUser);
       
       if (fbUser) {
+        // Força a liberação da catraca caso seja o usuário Mestre (Evita o delay da busca no DB)
+        if (fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
+          document.cookie = "admin_session=true; path=/; max-age=86400";
+        }
+
         try {
           const docRef = doc(db, "users", fbUser.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setProfile(docSnap.data());
+            const data = docSnap.data();
+            setProfile(data);
+            
+            // Sincroniza o cargo com os Cookies para o Middleware liberar a rota /admin
+            if (data.role === 'admin' || data.role === 'owner' || fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
+              document.cookie = "admin_session=true; path=/; max-age=86400";
+            } else {
+              document.cookie = "admin_session=; path=/; max-age=0";
+            }
           }
         } catch (error) {
           console.error("Erro ao buscar perfil:", error);
         }
       } else {
         setProfile(null);
+        document.cookie = "admin_session=; path=/; max-age=0";
       }
       
       setLoading(false);

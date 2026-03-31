@@ -150,3 +150,20 @@
 .moreBtn {
   color: var(--text-muted);
 }
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .searchBox {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .filters {
+    flex-wrap: wrap;
+  }
+}

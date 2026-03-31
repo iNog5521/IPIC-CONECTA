@@ -45,7 +45,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
   gap: 1.5rem;
 }
 
@@ -157,4 +157,21 @@
 
 .deleteBtn:hover {
   opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .searchBox {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

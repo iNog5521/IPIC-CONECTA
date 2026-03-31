@@ -10,8 +10,9 @@ export function middleware(request: NextRequest) {
     // Usamos um cookie de sessão ou apenas verificamos se existe um token (simulado por enquanto)
     // Para manter o "Redirecionamento Furtivo", se não houver permissão, joga para a Home /
     
-    // Simulação: Se não houver cookie de admin, redireciona
-    const isAdmin = request.cookies.get('admin_session'); 
+    // Simulação: Se não houver cookie de admin com valor true, redireciona
+    const adminCookie = request.cookies.get('admin_session'); 
+    const isAdmin = adminCookie?.value === 'true';
     
     if (!isAdmin) {
       return NextResponse.redirect(new URL('/', request.url));
