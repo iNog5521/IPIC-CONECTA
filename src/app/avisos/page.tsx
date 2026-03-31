@@ -1,66 +1,119 @@
-import styles from "./page.module.css";
-import { Bell, ChevronRight, Clock, Calendar } from "lucide-react";
+"use client";
 
-const AVISOS_MOCK = [
-  {
-    id: 1,
-    title: "Congresso de Mulheres 2026",
-    excerpt: "Inscrições abertas para o congresso anual que ocorrerá em Maio.",
-    date: "15 Mai",
-    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    category: "Eventos"
-  },
-  {
-    id: 2,
-    title: "Nova Campanha de Doação",
-    excerpt: "Estamos arrecadando alimentos para as famílias da comunidade local.",
-    date: "31 Mar",
-    image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    category: "Social"
-  },
-  {
-    id: 3,
-    title: "Reunião de Líderes",
-    excerpt: "Encontro mensal para planejamento do próximo trimestre.",
-    date: "05 Abr",
-    image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    category: "Liderança"
-  }
-];
+import { useState, useEffect } from "react";
+import styles from "./page.module.css";
+import { ChevronRight, Calendar, MapPin, Loader2, Info } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot, where } from "firebase/firestore";
+import { useAuth } from "@/context/AuthContext";
+
+interface Aviso {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  sede: string;
+  imageUrl: string;
+  createdAt: any;
+}
 
 export default function MuralPage() {
+  const { profile } = useAuth();
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!db) return;
+
+    // Buscamos todos os avisos e filtramos no cliente para garantir 
+    // que avisos "Geral" sempre apareçam e os da sede do usuário também.
+    // Firestore não suporta bem OR complexos sem índices pesados, 
+    // então filtrar no client é mais seguro para esta escala.
+    const q = query(collection(db, "avisos"), orderBy("createdAt", "desc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const allDocs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Aviso[];
+
+      // Filtro por Sede: Geral + Sede do Usuário
+      const userSede = profile?.sede || "Geral";
+      const filtered = allDocs.filter(aviso => 
+        aviso.sede === "Geral" || aviso.sede === userSede
+      );
+
+      setAvisos(filtered);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [profile?.sede]);
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return "Recente";
+    const date = timestamp.toDate();
+    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(date);
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.pageHeader}>
-        <h1 className={styles.title}>Mural de Avisos</h1>
-        <p className={styles.subtitle}>Fique por dentro das novidades da nossa comunidade.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
+          <div>
+            <h1 className={styles.title}>Mural de Avisos</h1>
+            <p className={styles.subtitle}>Fique por dentro das novidades da nossa comunidade.</p>
+          </div>
+          {profile?.sede && (
+            <div className={styles.userSedeBadge}>
+              <MapPin size={14} />
+              <span>{profile.sede}</span>
+            </div>
+          )}
+        </div>
       </header>
 
-      <div className={styles.feed}>
-        {AVISOS_MOCK.map((aviso) => (
-          <div key={aviso.id} className={styles.avisoCard}>
-            <div 
-              className={styles.avisoImage} 
-              style={{ backgroundImage: `url(${aviso.image})` }}
-            >
-              <span className={styles.categoryBadge}>{aviso.category}</span>
-            </div>
-            <div className={styles.avisoInfo}>
-              <div className={styles.dateInfo}>
-                <Calendar size={14} />
-                <span>{aviso.date}</span>
+      {loading ? (
+        <div className={styles.loadingContainer}>
+          <Loader2 size={40} className="animate-spin" style={{ color: 'var(--primary)' }} />
+          <p>Carregando novidades...</p>
+        </div>
+      ) : avisos.length === 0 ? (
+        <div className={styles.emptyContainer}>
+          <div className={styles.emptyIcon}><Info size={48} /></div>
+          <h2>Tudo tranquilo por aqui</h2>
+          <p>Não há avisos específicos para sua sede no momento.</p>
+        </div>
+      ) : (
+        <div className={styles.feed}>
+          {avisos.map((aviso) => (
+            <div key={aviso.id} className={styles.avisoCard}>
+              <div 
+                className={styles.avisoImage} 
+                style={{ backgroundImage: `url(${aviso.imageUrl})` }}
+              >
+                <div className={styles.badgeContainer}>
+                  <span className={styles.categoryBadge}>{aviso.category}</span>
+                  {aviso.sede !== "Geral" && <span className={styles.sedeBadge}>{aviso.sede}</span>}
+                </div>
               </div>
-              <h2 className={styles.avisoTitle}>{aviso.title}</h2>
-              <p className={styles.avisoExcerpt}>{aviso.excerpt}</p>
-              <div className={styles.cardFooter}>
-                <button className={styles.readMore}>
-                  Ler mais <ChevronRight size={16} />
-                </button>
+              <div className={styles.avisoInfo}>
+                <div className={styles.dateInfo}>
+                  <Calendar size={14} />
+                  <span>{formatDate(aviso.createdAt)}</span>
+                </div>
+                <h2 className={styles.avisoTitle}>{aviso.title}</h2>
+                <p className={styles.avisoExcerpt}>{aviso.excerpt}</p>
+                <div className={styles.cardFooter}>
+                  <button className={styles.readMore}>
+                    Ler mais <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
