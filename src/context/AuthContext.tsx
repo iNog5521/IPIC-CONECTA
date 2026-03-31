@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 interface AuthContextType {
@@ -28,41 +28,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    let unsubProfile: (() => void) | undefined;
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setUser(fbUser);
       
+      if (unsubProfile) {
+        unsubProfile();
+      }
+      
       if (fbUser) {
-        // Força a liberação da catraca caso seja o usuário Mestre (Evita o delay da busca no DB)
+        // Força a liberação da catraca caso seja o usuário Mestre
         if (fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
           document.cookie = "admin_session=true; path=/; max-age=86400";
         }
 
         try {
           const docRef = doc(db, "users", fbUser.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setProfile(data);
-            
-            // Sincroniza o cargo com os Cookies para o Middleware liberar a rota /admin
-            if (data.role === 'admin' || data.role === 'owner' || fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
-              document.cookie = "admin_session=true; path=/; max-age=86400";
+          unsubProfile = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              setProfile(data);
+              
+              if (data.role === 'admin' || data.role === 'owner' || fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
+                document.cookie = "admin_session=true; path=/; max-age=86400";
+              } else {
+                // Caso seja rebaixado para usuário em tempo real
+                document.cookie = "admin_session=; path=/; max-age=0";
+              }
             } else {
-              document.cookie = "admin_session=; path=/; max-age=0";
+              setProfile(null);
             }
-          }
+            setLoading(false);
+          }, (error) => {
+            console.error("Erro ao escutar perfil em tempo real:", error);
+            setLoading(false);
+          });
         } catch (error) {
-          console.error("Erro ao buscar perfil:", error);
+          console.error("Erro na referência do perfil:", error);
+          setLoading(false);
         }
       } else {
         setProfile(null);
         document.cookie = "admin_session=; path=/; max-age=0";
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
   return (

@@ -1,11 +1,92 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import styles from "./page.module.css";
-import { Send, Heart, History, Plus } from "lucide-react";
+import { Send, History, Plus, User } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp } from "firebase/firestore";
+import Link from "next/link";
 
 export default function OracoesPage() {
-  const HISTORICO = [
-    { id: 1, text: "Oração pela saúde da minha mãe que está no hospital.", status: "Em Oração", date: "Ontem" },
-    { id: 2, text: "Gratidão pela nova oportunidade de emprego.", status: "Respondida", date: "25 Mar" }
-  ];
+  const { user, profile, loading } = useAuth();
+  const [pedido, setPedido] = useState("");
+  const [historico, setHistorico] = useState<any[]>([]);
+  const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Busca os pedidos do usuário (sem o orderBy longo do BD para ignorar a necessidade de Índice composto)
+    const q = query(
+      collection(db, "oracoes"),
+      where("uid", "==", user.uid)
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach(doc => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      
+      // Ordena por data mais recente localmente (Bypass de Firebase Index Error)
+      list.sort((a, b) => {
+        const dataA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const dataB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return dataB - dataA;
+      });
+      
+      setHistorico(list);
+    });
+
+    return () => unsub();
+  }, [user]);
+
+  const handleSendPedido = async () => {
+    if (!pedido.trim() || !user) return;
+    setIsSending(true);
+
+    try {
+      await addDoc(collection(db, "oracoes"), {
+        uid: user.uid,
+        nome: user.displayName || profile?.nome || "Membro IPIC",
+        sede: profile?.sede || "Não definida",
+        texto: pedido.trim(),
+        status: "Pendente",
+        createdAt: serverTimestamp(),
+      });
+      
+      setPedido(""); // Limpa o textarea após sucesso
+      alert("Seu pedido foi enviado! Estaremos orando por você.");
+    } catch (e) {
+      console.error("Erro ao enviar oração:", e);
+      alert("Ops, erro ao enviar o pedido. Tente novamente mais tarde.");
+    }
+    
+    setIsSending(false);
+  };
+
+  if (loading) {
+    return <div style={{ padding: "2rem", textAlign: "center", color: "var(--primary)" }}>Carregando...</div>;
+  }
+
+  if (!user) {
+    return (
+      <div className={styles.container} style={{ textAlign: "center", paddingTop: "4rem" }}>
+        <User size={64} style={{ color: "var(--primary-light)", marginBottom: "1rem" }} />
+        <h1 className={styles.title} style={{ fontSize: "1.5rem" }}>Faça Login</h1>
+        <p className={styles.subtitle} style={{ marginBottom: "2rem" }}>
+          Você precisa estar logado para enviar pedidos de oração.
+        </p>
+        <Link href="/login" style={{ 
+          background: "var(--primary)", color: "white", padding: "0.8rem 1.5rem", 
+          borderRadius: "100px", fontWeight: "bold", textDecoration: "none" 
+        }}>
+          Fazer Login Agora
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -19,12 +100,21 @@ export default function OracoesPage() {
           <textarea 
             placeholder="Como podemos orar por você hoje?" 
             className={styles.textarea}
+            value={pedido}
+            onChange={(e) => setPedido(e.target.value)}
+            disabled={isSending}
+            maxLength={500}
           ></textarea>
           <div className={styles.inputFooter}>
-            <span className={styles.charCount}>0 / 500</span>
-            <button className={styles.sendBtn}>
+            <span className={styles.charCount}>{pedido.length} / 500</span>
+            <button 
+              className={styles.sendBtn} 
+              onClick={handleSendPedido}
+              disabled={isSending || pedido.trim().length === 0}
+              style={{ opacity: (isSending || pedido.trim().length === 0) ? 0.6 : 1 }}
+            >
               <Send size={18} />
-              Enviar Pedido
+              {isSending ? "Enviando..." : "Enviar Pedido"}
             </button>
           </div>
         </div>
@@ -36,28 +126,31 @@ export default function OracoesPage() {
           <h2>Meus Pedidos</h2>
         </div>
 
-        <div className={styles.historyList}>
-          {HISTORICO.map((item) => (
-            <div key={item.id} className={styles.historyCard}>
-              <div className={styles.cardHeader}>
-                <span className={styles.date}>{item.date}</span>
-                <span className={`${styles.status} ${item.status === 'Respondida' ? styles.answered : styles.waiting}`}>
-                  {item.status}
-                </span>
+        {historico.length === 0 ? (
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", textAlign: "center", padding: "2rem 0" }}>
+            Você ainda não enviou nenhum pedido de oração.
+          </p>
+        ) : (
+          <div className={styles.historyList}>
+            {historico.map((item) => (
+              <div key={item.id} className={styles.historyCard}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.date}>
+                    {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString('pt-BR') : 'Hoje'}
+                  </span>
+                  <span className={`${styles.status} ${item.status === 'Orado' ? styles.answered : styles.waiting}`}>
+                    {item.status}
+                  </span>
+                </div>
+                <p className={styles.requestText}>{item.texto}</p>
+                <div className={styles.cardFooter}>
+                  <button className={styles.detailsBtn}>Confirmado pela Liderança</button>
+                </div>
               </div>
-              <p className={styles.requestText}>{item.text}</p>
-              <div className={styles.cardFooter}>
-                <button className={styles.detailsBtn}>Ver detalhes</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Botão flutuante para scroll móvel */}
-      <button className={styles.fab}>
-        <Plus size={24} />
-      </button>
     </div>
   );
 }

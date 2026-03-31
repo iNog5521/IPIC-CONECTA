@@ -23,15 +23,9 @@
 
 .sedesSelector {
   display: flex;
-  overflow-x: auto;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  padding-bottom: 1rem;
   margin-bottom: 1.5rem;
-  scrollbar-width: none;
-}
-
-.sedesSelector::-webkit-scrollbar {
-  display: none;
 }
 
 .sedeBtn {
