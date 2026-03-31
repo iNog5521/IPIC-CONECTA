@@ -1,0 +1,98 @@
+"use client";
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { 
+  LayoutDashboard, 
+  Image as ImageIcon, 
+  Calendar, 
+  Heart, 
+  Users, 
+  Settings, 
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react';
+import styles from './layout.module.css';
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+
+  const menuItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+    { name: 'Mural de Avisos', icon: ImageIcon, path: '/admin/mural' },
+    { name: 'Agenda & Cultos', icon: Calendar, path: '/admin/agenda' },
+    { name: 'Pedidos de Oração', icon: Heart, path: '/admin/oracoes' },
+    { name: 'Membros', icon: Users, path: '/admin/membros' },
+    { name: 'Configurações', icon: Settings, path: '/admin/config' },
+  ];
+
+  return (
+    <div className={styles.layout}>
+      {/* Sidebar - Desktop */}
+      <aside className={`${styles.sidebar} ${!isSidebarOpen ? styles.collapsed : ''}`}>
+        <div className={styles.logoArea}>
+          <div className={styles.logo}>
+            <span className={styles.ipic}>IPIC</span> Admin
+          </div>
+          <button 
+            className={styles.toggleBtn} 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+
+        <nav className={styles.nav}>
+          {menuItems.map((item) => {
+            const isActive = pathname === item.path;
+            return (
+              <Link 
+                key={item.name} 
+                href={item.path} 
+                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+              >
+                <item.icon size={22} />
+                {isSidebarOpen && <span>{item.name}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className={styles.footer}>
+          <Link href="/" className={styles.logoutBtn}>
+            <LogOut size={20} />
+            {isSidebarOpen && <span>Sair do Painel</span>}
+          </Link>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className={styles.main}>
+        <header className={styles.topHeader}>
+          <div className={styles.welcome}>
+            <h1>Painel Administrativo</h1>
+            <p>Bem-vindo à gestão do IPIC CONECTA</p>
+          </div>
+          <div className={styles.userProfile}>
+            <div className={styles.userInfo}>
+              <span className={styles.userName}>Admin Master</span>
+              <span className={styles.userRole}>Administrador Geral</span>
+            </div>
+            <div className={styles.avatar}>AM</div>
+          </div>
+        </header>
+
+        <div className={styles.content}>
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}

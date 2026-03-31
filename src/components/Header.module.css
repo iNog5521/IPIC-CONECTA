@@ -1,0 +1,57 @@
+.header {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 64px;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.container {
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  gap: 0.25rem;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
+}
+
+.ipic {
+  color: var(--primary);
+}
+
+.conecta {
+  color: var(--secondary);
+}
+
+.profileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--primary-faded);
+  color: var(--primary);
+  transition: all 0.2s ease;
+}
+
+.profileIcon:active {
+  transform: scale(0.95);
+  background-color: var(--primary);
+  color: white;
+}

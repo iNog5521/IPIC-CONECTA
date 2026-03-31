@@ -1,0 +1,347 @@
+.container {
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.loadingContainer {
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--primary-faded);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.guestContainer {
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.guestCard {
+  background-color: var(--surface);
+  padding: 3rem 2rem;
+  border-radius: 32px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.guestIcon {
+  color: var(--primary-light);
+  opacity: 0.5;
+}
+
+.guestCard h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.guestCard p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.loginBtn {
+  width: 100%;
+  background-color: var(--primary);
+  color: white;
+  padding: 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.signupLink {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.profileHeader {
+  background-color: var(--primary);
+  padding: 3rem 1.25rem 2rem;
+  text-align: center;
+  color: white;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+}
+
+.avatarArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  background-color: var(--surface);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  position: relative;
+  margin-bottom: 1rem;
+  border: 4px solid var(--primary-light);
+  box-shadow: var(--shadow-lg);
+}
+
+.cameraBtn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: var(--secondary);
+  color: var(--primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary);
+}
+
+.userName {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.userBadge {
+  background-color: var(--secondary);
+  color: var(--primary);
+  padding: 0.25rem 1rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.content {
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.adminAccessBtn {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, var(--primary), #2d5a52);
+  padding: 1.5rem;
+  border-radius: 20px;
+  color: white;
+  text-decoration: none;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.adminIconBox {
+  background-color: var(--secondary);
+  color: var(--primary);
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adminTextBox {
+  flex: 1;
+}
+
+.adminTextBox h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.adminTextBox p {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.inboxCard {
+  background: linear-gradient(135deg, var(--surface), var(--primary-faded));
+  padding: 1.25rem;
+  border-radius: 16px;
+  border-left: 5px solid var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.inboxHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.inboxCard p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.msgDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: block;
+}
+
+.dataList {
+  background-color: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.dataItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.dataItem:last-child {
+  border-bottom: none;
+}
+
+.dataIcon {
+  color: var(--primary);
+  background-color: var(--primary-faded);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dataInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sedeCard {
+  background-color: var(--primary-faded);
+  padding: 1.25rem;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--primary-light);
+}
+
+.sedeInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sedeIcon {
+  color: var(--primary);
+}
+
+.sedeText {
+  display: flex;
+  flex-direction: column;
+}
+
+.changeSedeBtn {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.settingsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settingsIcon {
+  background-color: #F3F4F6 !important;
+  color: var(--text-secondary) !important;
+}
+
+.arrowRight {
+  color: var(--border);
+  margin-left: auto;
+}
+
+.logoutBtn {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 1rem;
+  background-color: #FEE2E2;
+  color: #EF4444;
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.logoutBtn:active {
+  background-color: #F87171;
+  color: white;
+}
