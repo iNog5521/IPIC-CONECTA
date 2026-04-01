@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import { Plus, Image as ImageIcon, Trash2, Edit2, MapPin, Upload, X, Loader2 } from "lucide-react";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { 
   collection, 
   addDoc, 
@@ -15,12 +15,7 @@ import {
   onSnapshot,
   serverTimestamp 
 } from "firebase/firestore";
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from "firebase/storage";
+
 
 interface Aviso {
   id: string;
@@ -66,6 +61,7 @@ export default function AdminMuralPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log("Arquivo selecionado:", file.name, file.size, file.type);
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -84,11 +80,29 @@ export default function AdminMuralPage() {
 
     setSaving(true);
     try {
-      // 1. Upload Image to Storage
-      const storagePath = `avisos/${Date.now()}_${imageFile.name}`;
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, imageFile);
-      const imageUrl = await getDownloadURL(storageRef);
+      let imageUrl = "";
+      let storagePath = "";
+      
+      // 1. Upload Image via API (evita CORS)
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("folder", "avisos");
+
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || "Falha ao fazer upload da imagem");
+        }
+
+        const uploadData = await uploadResponse.json();
+        imageUrl = uploadData.url;
+        storagePath = uploadData.path;
+      }
 
       // 2. Save to Firestore
       await addDoc(collection(db, "avisos"), {
@@ -104,9 +118,14 @@ export default function AdminMuralPage() {
       // Reset & Close
       setIsModalOpen(false);
       resetForm();
-    } catch (error) {
+      alert("Aviso publicado com sucesso!");
+    } catch (error: any) {
       console.error("Erro ao salvar aviso:", error);
-      alert("Erro ao salvar o aviso. Tente novamente.");
+      let msg = "Erro ao salvar o aviso. Tente novamente.";
+      if (error.message) {
+        msg = `Erro: ${error.message}`;
+      }
+      alert(msg);
     } finally {
       setSaving(false);
     }
@@ -116,14 +135,20 @@ export default function AdminMuralPage() {
     if (!confirm("Tem certeza que deseja excluir este aviso?")) return;
 
     try {
-      // 1. Delete from Storage
+      console.log("Iniciando exclusão do aviso:", aviso.id);
+      
+      // 1. Delete from Storage via API
       if (aviso.storagePath) {
-        const storageRef = ref(storage, aviso.storagePath);
-        await deleteObject(storageRef).catch(err => console.warn("Erro ao deletar arquivo do storage:", err));
+        console.log("Excluindo arquivo do Storage:", aviso.storagePath);
+        await fetch(`/api/upload?path=${encodeURIComponent(aviso.storagePath)}`, {
+          method: "DELETE",
+        }).catch(err => console.warn("Erro ao deletar arquivo do storage:", err));
       }
 
       // 2. Delete from Firestore
+      console.log("Excluindo documento do Firestore:", aviso.id);
       await deleteDoc(doc(db, "avisos", aviso.id));
+      console.log("Exclusão concluída com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir aviso:", error);
       alert("Erro ao excluir aviso.");

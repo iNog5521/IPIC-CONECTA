@@ -5,7 +5,7 @@ import styles from "./page.module.css";
 import { Send, History, Plus, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import Link from "next/link";
 
 export default function OracoesPage() {
@@ -64,6 +64,16 @@ export default function OracoesPage() {
     }
     
     setIsSending(false);
+  };
+
+  const handleDeletePedido = async (id: string) => {
+    if (!confirm("Deseja realmente remover este pedido de oração?")) return;
+    try {
+      await deleteDoc(doc(db, "oracoes", id));
+    } catch (e) {
+      console.error("Erro ao excluir oração:", e);
+      alert("Não foi possível excluir o pedido. Tente novamente mais tarde.");
+    }
   };
 
   if (loading) {
@@ -144,7 +154,19 @@ export default function OracoesPage() {
                 </div>
                 <p className={styles.requestText}>{item.texto}</p>
                 <div className={styles.cardFooter}>
-                  <button className={styles.detailsBtn}>Confirmado pela Liderança</button>
+                  {item.uid === user.uid ? (
+                    <button
+                      className={styles.detailsBtn}
+                      onClick={() => handleDeletePedido(item.id)}
+                      style={{ color: 'var(--danger)', fontWeight: 800 }}
+                    >
+                      Remover
+                    </button>
+                  ) : (
+                    <span className={styles.detailsBtn}>
+                      {item.status === 'Orado' ? 'Confirmado pela Liderança' : 'Aguardando confirmação'}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
