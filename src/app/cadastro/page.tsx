@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Mail, Lock, Phone, MapPin, Calendar, ArrowRight } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, onSnapshot } from "firebase/firestore";
+
+interface Sede {
+  id: string;
+  nome: string;
+  endereco: string;
+  active: boolean;
+}
 
 export default function CadastroPage() {
   const router = useRouter();
-  const SEDES = ["Sede Central", "Sede Norte", "Sede Sul"];
+  const [sedes, setSedes] = useState<Sede[]>([]);
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -21,6 +28,18 @@ export default function CadastroPage() {
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    const q = query(collection(db, "sedes"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Sede[];
+      setSedes(docs.filter((s: Sede) => s.active));
+    });
+    return () => unsub();
+  }, []);
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,8 +165,8 @@ export default function CadastroPage() {
                 disabled={loading}
               >
                 <option value="">Selecione sua sede...</option>
-                {SEDES.map(s => (
-                  <option key={s} value={s}>{s}</option>
+                {sedes.map((s: Sede) => (
+                  <option key={s.id} value={s.nome}>{s.nome}</option>
                 ))}
               </select>
             </div>

@@ -6,6 +6,7 @@ import { ChevronRight, Calendar, MapPin, Loader2, Info } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, where } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 
 interface Aviso {
   id: string;

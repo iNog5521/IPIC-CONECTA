@@ -9,10 +9,11 @@ import {
   Calendar, 
   Heart, 
   Users, 
-  Settings, 
+  BookOpen, 
   LogOut,
   Menu,
-  X
+  X,
+  MapPin
 } from 'lucide-react';
 import styles from './layout.module.css';
 
@@ -37,7 +38,8 @@ export default function AdminLayout({
     { name: 'Agenda & Cultos', icon: Calendar, path: '/admin/agenda' },
     { name: 'Pedidos de Oração', icon: Heart, path: '/admin/oracoes' },
     { name: 'Membros', icon: Users, path: '/admin/membros' },
-    { name: 'Configurações', icon: Settings, path: '/admin/config' },
+    { name: 'Sedes', icon: MapPin, path: '/admin/sedes' },
+    { name: 'Palavra do Dia', icon: BookOpen, path: '/admin/palavra' },
   ];
 
   return (

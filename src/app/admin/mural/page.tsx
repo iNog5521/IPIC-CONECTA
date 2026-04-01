@@ -28,8 +28,16 @@ interface Aviso {
   createdAt: any;
 }
 
+interface Sede {
+  id: string;
+  nome: string;
+  endereco: string;
+  active: boolean;
+}
+
 export default function AdminMuralPage() {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [sedes, setSedes] = useState<Sede[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -45,6 +53,15 @@ export default function AdminMuralPage() {
   useEffect(() => {
     if (!db) return;
 
+    const qSedes = query(collection(db, "sedes"));
+    const unsubSedes = onSnapshot(qSedes, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Sede[];
+      setSedes(docs.filter((s: Sede) => s.active));
+    });
+
     const q = query(collection(db, "avisos"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
@@ -55,7 +72,10 @@ export default function AdminMuralPage() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubSedes();
+      unsubscribe();
+    };
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,11 +286,9 @@ export default function AdminMuralPage() {
                   <label>Sede</label>
                   <select className={styles.select} value={sede} onChange={(e) => setSede(e.target.value)}>
                     <option value="Geral">Geral (Todos)</option>
-                    <option value="Sede Central">Sede Central</option>
-                    <option value="Sede Norte">Sede Norte</option>
-                    <option value="Sede Sul">Sede Sul</option>
-                    <option value="Sede Leste">Sede Leste</option>
-                    <option value="Sede Oeste">Sede Oeste</option>
+                    {sedes.map((s) => (
+                      <option key={s.id} value={s.nome}>{s.nome}</option>
+                    ))}
                   </select>
                 </div>
                 <div className={styles.formGroup}>

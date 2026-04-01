@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import { 
   User, 
@@ -13,15 +14,55 @@ import {
   MessageCircle, 
   Settings, 
   ShieldCheck,
-  Lock
+  Lock,
+  X
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { doc, updateDoc, collection, query, onSnapshot } from "firebase/firestore";
+
+interface Sede {
+  id: string;
+  nome: string;
+  endereco: string;
+  active: boolean;
+}
 
 export default function PerfilPage() {
   const { user, profile, loading } = useAuth();
+  const [sedes, setSedes] = useState<Sede[]>([]);
+  const [showSedeModal, setShowSedeModal] = useState(false);
+  const [newSede, setNewSede] = useState("");
+
+  useEffect(() => {
+    const q = query(collection(db, "sedes"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Sede[];
+      setSedes(docs.filter((s: Sede) => s.active));
+    });
+    return () => unsub();
+  }, []);
+
+  const handleChangeSede = async (novaSede?: string) => {
+    const sedeParaSalvar = novaSede || newSede;
+    if (!sedeParaSalvar || !user) return;
+    
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        sede: sedeParaSalvar
+      });
+      setShowSedeModal(false);
+      alert("Sede atualizada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar sede:", error);
+      alert("Erro ao atualizar sede.");
+    }
+  };
 
   if (loading) {
     return (
@@ -153,10 +194,13 @@ export default function PerfilPage() {
                 <MapPin size={20} className={styles.sedeIcon} />
                 <div className={styles.sedeText}>
                   <span className={styles.label}>Sua Sede Atual</span>
-                  <span className={styles.value}>{profile?.sede || "Sede Central"}</span>
+                  <span className={styles.value}>{profile?.sede || "Não definida"}</span>
                 </div>
               </div>
-              <button className={styles.changeSedeBtn}>
+              <button className={styles.changeSedeBtn} onClick={() => {
+                setNewSede(profile?.sede || "");
+                setShowSedeModal(true);
+              }}>
                 Mudar <ChevronRight size={18} />
               </button>
             </div>
@@ -168,6 +212,47 @@ export default function PerfilPage() {
           Sair da Conta
         </button>
       </div>
+
+      {/* Modal de Troca de Sede */}
+      {showSedeModal && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', 
+          backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', 
+          justifyContent: 'center', zIndex: 1000, padding: '1rem'
+        }} onClick={() => setShowSedeModal(false)}>
+          <div style={{
+            backgroundColor: 'white', width: '100%', maxWidth: '400px', 
+            borderRadius: '24px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)' }}>Alterar Minha Sede</h2>
+              <button onClick={() => setShowSedeModal(false)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Selecione a sede que você participa:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+              {sedes.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setNewSede(s.nome); handleChangeSede(s.nome); }}
+                  style={{
+                    padding: '0.75rem 1rem', borderRadius: '12px', border: newSede === s.nome ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    background: newSede === s.nome ? 'var(--primary-faded)' : 'white', textAlign: 'left', cursor: 'pointer', fontWeight: newSede === s.nome ? '700' : '400',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem'
+                  }}
+                >
+                  <MapPin size={16} style={{ color: newSede === s.nome ? 'var(--primary)' : 'var(--text-muted)' }} />
+                  {s.nome}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowSedeModal(false)} style={{ marginTop: '1rem', width: '100%', padding: '0.75rem', borderRadius: '12px', background: '#f3f4f6', border: 'none', cursor: 'pointer', fontWeight: '600' }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
