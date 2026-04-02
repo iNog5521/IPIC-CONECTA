@@ -289,8 +289,10 @@ export default function AdminMembrosPage() {
                           {m.nome ? m.nome.substring(0, 2).toUpperCase() : "US"}
                         </div>
                         <div className={styles.memberInfo}>
-                          <span className={styles.name}>{m.nome} {m.email === "inog5521@gmail.com" && "👑"}</span>
-                          <span className={styles.email}>{m.email}</span>
+                          <span className={styles.name}>
+                            {m.nome || m.displayName || "Sem nome"} {m.email === "inog5521@gmail.com" && "👑"}
+                          </span>
+                          <span className={styles.email}>{m.email || "Sem e-mail"}</span>
                         </div>
                       </div>
                     </td>

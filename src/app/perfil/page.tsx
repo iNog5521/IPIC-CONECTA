@@ -433,9 +433,25 @@ export default function PerfilPage() {
               <div className={styles.dataIcon}><Calendar size={18} /></div>
               <div className={styles.dataInfo}>
                 <span className={styles.label}>Nascimento</span>
-                <span className={styles.value}>{profile?.nascimento || "-- / -- / ----"}</span>
+                <span className={styles.value}>
+                  {profile?.nascimento 
+                    ? new Date(profile.nascimento).toLocaleDateString("pt-BR") 
+                    : "--/--/----"}
+                </span>
               </div>
             </div>
+
+            {profile?.fielDesde && (
+              <div className={styles.dataItem}>
+                <div className={styles.dataIcon}><Calendar size={18} /></div>
+                <div className={styles.dataInfo}>
+                  <span className={styles.label}>Membro Desde</span>
+                  <span className={styles.value}>
+                    {new Date(profile.fielDesde).toLocaleDateString("pt-BR")}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

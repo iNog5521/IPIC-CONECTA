@@ -35,7 +35,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const unsubUsers = onSnapshot(query(collection(db, "users")), (snapshot) => {
-      const usersCount = snapshot.docs.filter(d => d.data().role === 'user').length;
+      // Conta usuários que não são owner nem admin
+      const usersCount = snapshot.docs.filter(d => {
+        const role = d.data().role;
+        return role !== 'owner' && role !== 'admin';
+      }).length;
       setStats(prev => ({ ...prev, membros: usersCount }));
     });
 

@@ -9,53 +9,70 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Sedes: qualquer um pode ler (para o cadastro), só admin/owner pode escrever
+    // Sedes: leitura pública (necessário para o cadastro/login funcionar)
     match /sedes/{sedeId} {
       allow read: if true;
       allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
     
-    // Coleções de gestão: líder/owner podem gerenciar
+    // Cultos: leitura pública
+    match /cultos/{cultoId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+    }
+    
+    // Confirmações: qualquer usuário logado pode ler e criar
+    match /confirmacoes/{confirmId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Membros: qualquer usuário logado pode ler
     match /membros/{membroId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
     
     match /avisos/{avisoId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
-    }
-    
-    match /cultos/{cultoId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
     
     match /agenda/{eventId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
     
     match /oracoes/{orcaoId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
     
     match /palavra/{palavraId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
     
     match /mensagens_admin/{msgId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
   }

@@ -74,6 +74,7 @@ export default function LoginPage() {
         await setDoc(docRef, {
           nome: user.displayName || "Visitante",
           email: user.email,
+          photoURL: user.photoURL || "",
           role: isOwner ? "owner" : "user",
           createdAt: new Date().toISOString()
         });
