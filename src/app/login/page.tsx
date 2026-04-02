@@ -19,8 +19,12 @@ export default function LoginPage() {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
-    if (searchParams.get("verified") === "false") {
+    // Se já está na página de login com verified=false, não precisa verificar novamente
+    const verified = searchParams.get("verified");
+    if (verified === "false") {
       setErro("⚠️ E-mail não verificado. Verifique sua caixa de entrada e clique no link de confirmação.");
+    } else if (verified === "pending") {
+      setErro("✅ Conta criada! Verifique seu e-mail para ativar sua conta.");
     }
   }, [searchParams]);
 

@@ -89,7 +89,7 @@ export default function CadastroPage() {
 
       // Success! Show message and redirect to login
       alert("Conta criada! Verifique seu e-mail para ativar a conta.");
-      router.push("/login");
+      router.push("/login?verified=pending");
     } catch (error: any) {
       console.error(error);
       if (error.code === 'auth/email-already-in-use') {
