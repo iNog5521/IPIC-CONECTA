@@ -118,59 +118,86 @@ export function CalendarInput({ label, value, onChange, placeholder = "Selecione
               <span className="sr-only">Selecionar data</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end" alignOffset={-8} sideOffset={10} style={{ zIndex: 9999 }}>
-            <div style={{ padding: '1rem', minWidth: '280px' }}>
+          <PopoverContent className="w-auto p-0" align="end" alignOffset={-8} sideOffset={10} style={{ zIndex: 9999, backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ padding: '1rem', minWidth: '300px', backgroundColor: 'white', borderRadius: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} style={{ padding: '0.5rem' }}>
-                  <ChevronLeft className="size-4" />
+                <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} style={{ padding: '0.5rem', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
+                  <ChevronLeft className="size-4" style={{ color: 'var(--primary)' }} />
                 </Button>
-                <select
-                  value={month}
-                  onChange={(e) => { const d = new Date(viewDate); d.setMonth(parseInt(e.target.value)); setViewDate(d) }}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb', fontWeight: 600 }}
-                >
-                  {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                </select>
-                <select
-                  value={year}
-                  onChange={(e) => { const d = new Date(viewDate); d.setFullYear(parseInt(e.target.value)); setViewDate(d) }}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb', fontWeight: 600 }}
-                >
-                  {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - 30 + i).map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-                <Button variant="ghost" size="icon" onClick={() => changeMonth(1)} style={{ padding: '0.5rem' }}>
-                  <ChevronRight className="size-4" />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <select
+                    value={month}
+                    onChange={(e) => { const d = new Date(viewDate); d.setMonth(parseInt(e.target.value)); setViewDate(d) }}
+                    style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontWeight: 600, backgroundColor: 'white', color: 'var(--text-primary)' }}
+                  >
+                    {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                  </select>
+                  <select
+                    value={year}
+                    onChange={(e) => { const d = new Date(viewDate); d.setFullYear(parseInt(e.target.value)); setViewDate(d) }}
+                    style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontWeight: 600, backgroundColor: 'white', color: 'var(--text-primary)' }}
+                  >
+                    {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - 30 + i).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => changeMonth(1)} style={{ padding: '0.5rem', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
+                  <ChevronRight className="size-4" style={{ color: 'var(--primary)' }} />
                 </Button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '0.5rem' }}>
                 {DAYS.map((day) => (
-                  <div key={day} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', padding: '0.25rem' }}>
+                  <div key={day} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', padding: '0.5rem' }}>
                     {day}
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                {paddingDays.map((_, i) => <div key={`pad-${i}`} />)}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                {paddingDays.map((_, i) => <div key={`pad-${i}`} style={{ padding: '0.5rem' }} />)}
                 {days.map((day) => (
                   <button
                     key={day}
                     onClick={() => handleDateClick(day)}
                     style={{
                       padding: '0.5rem',
-                      borderRadius: isSelected(day) ? '0.5rem' : isToday(day) ? '0.5rem' : '0',
-                      background: isSelected(day) ? 'var(--primary)' : isToday(day) ? '#f3f4f6' : 'transparent',
+                      borderRadius: isSelected(day) ? '8px' : isToday(day) ? '8px' : '4px',
+                      background: isSelected(day) ? 'var(--primary)' : isToday(day) ? '#dcfce7' : '#f9fafb',
                       color: isSelected(day) ? 'white' : 'var(--text-primary)',
-                      fontWeight: isToday(day) ? 700 : 400,
+                      fontWeight: isToday(day) || isSelected(day) ? 700 : 400,
                       fontSize: '0.875rem',
-                      border: isToday(day) && !isSelected(day) ? '1px solid var(--primary)' : 'none',
+                      border: isToday(day) && !isSelected(day) ? '2px solid var(--primary)' : 'none',
                       cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected(day)) {
+                        e.currentTarget.style.backgroundColor = '#e5e7eb'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected(day)) {
+                        e.currentTarget.style.backgroundColor = isToday(day) ? '#dcfce7' : '#f9fafb'
+                      }
                     }}
                   >
                     {day}
                   </button>
                 ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
+                <button
+                  onClick={() => { onChange(undefined); setInputValue(""); setOpen(false); }}
+                  style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: 'transparent', color: '#6b7280', fontWeight: 500, cursor: 'pointer' }}
+                >
+                  Limpar
+                </button>
+                <button
+                  onClick={() => setOpen(false)}
+                  style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  OK
+                </button>
               </div>
             </div>
           </PopoverContent>
