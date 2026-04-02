@@ -27,9 +27,10 @@ export function DatePickerInput({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const currentYear = new Date().getFullYear();
   const years = Array.from(
-    { length: maxYear - minYear + 1 },
-    (_, i) => maxYear - i
+    { length: currentYear - minYear + 1 },
+    (_, i) => currentYear - i
   );
 
   const months = [
@@ -60,55 +61,6 @@ export function DatePickerInput({
     setSelectedMonth(newDate);
   };
 
-  const customHeader = () => (
-    <div className="flex items-center justify-between px-2 py-2 border-b border-gray-100">
-      <button
-        type="button"
-        onClick={() => handleMonthChange(-1)}
-        className="p-1 hover:bg-gray-100 rounded transition-colors text-sm font-medium"
-      >
-        &lt;
-      </button>
-      <select
-        value={selectedMonth.getMonth()}
-        onChange={(e) => {
-          const newDate = new Date(selectedMonth);
-          newDate.setMonth(parseInt(e.target.value));
-          setSelectedMonth(newDate);
-        }}
-        className="text-sm font-semibold bg-transparent border-none cursor-pointer focus:outline-none"
-      >
-        {months.map((month, index) => (
-          <option key={month} value={index}>
-            {month}
-          </option>
-        ))}
-      </select>
-      <select
-        value={selectedMonth.getFullYear()}
-        onChange={(e) => {
-          const newDate = new Date(selectedMonth);
-          newDate.setFullYear(parseInt(e.target.value));
-          setSelectedMonth(newDate);
-        }}
-        className="text-sm font-semibold bg-transparent border-none cursor-pointer focus:outline-none"
-      >
-        {years.map((year) => (
-          <option key={year} value={year}>
-            {year}
-          </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        onClick={() => handleMonthChange(1)}
-        className="p-1 hover:bg-gray-100 rounded transition-colors text-sm font-medium"
-      >
-        &gt;
-      </button>
-    </div>
-  );
-
   return (
     <div ref={containerRef} className="relative">
       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -118,24 +70,74 @@ export function DatePickerInput({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 border border-gray-300 rounded-xl text-left flex items-center justify-between hover:border-gray-400 transition-colors bg-white font-normal"
-        style={{ fontSize: '0.95rem' }}
+        style={{ 
+          fontSize: '0.95rem',
+          borderColor: isOpen ? 'var(--primary)' : undefined,
+          boxShadow: isOpen ? '0 0 0 2px var(--primary-faded)' : undefined
+        }}
       >
-        <span className={value ? "text-gray-900" : "text-gray-400"}>
-          {value ? format(value, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : placeholder}
+        <span className={value ? "text-gray-900" : "text-gray-400"} style={{ color: value ? undefined : '#9ca3af' }}>
+          {value ? format(value, "dd/MM/yyyy") : placeholder}
         </span>
-        <Calendar size={20} className="text-gray-400" />
+        <Calendar size={20} style={{ color: value ? 'var(--primary)' : '#9ca3af' }} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-200 p-3">
-          <div className="flex justify-between items-center mb-2">
-            {customHeader()}
+        <div 
+          className="absolute top-full left-0 mt-2 z-[9999] bg-white rounded-2xl shadow-2xl border border-gray-200 p-4"
+          style={{ 
+            minWidth: '320px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}
+        >
+          <div className="flex justify-between items-center mb-4">
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
-              className="absolute top-2 right-2 p-1 hover:bg-gray-100 rounded-full"
+              onClick={() => handleMonthChange(-1)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+              style={{ color: 'var(--primary)' }}
             >
-              <X size={16} className="text-gray-500" />
+              ‹
+            </button>
+            <div className="flex gap-2">
+              <select
+                value={selectedMonth.getMonth()}
+                onChange={(e) => {
+                  const newDate = new Date(selectedMonth);
+                  newDate.setMonth(parseInt(e.target.value));
+                  setSelectedMonth(newDate);
+                }}
+                className="text-sm font-semibold bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                {months.map((month, index) => (
+                  <option key={month} value={index}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedMonth.getFullYear()}
+                onChange={(e) => {
+                  const newDate = new Date(selectedMonth);
+                  newDate.setFullYear(parseInt(e.target.value));
+                  setSelectedMonth(newDate);
+                }}
+                className="text-sm font-semibold bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleMonthChange(1)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+              style={{ color: 'var(--primary)' }}
+            >
+              ›
             </button>
           </div>
           <DayPicker
@@ -152,23 +154,24 @@ export function DatePickerInput({
               day: { fontSize: '0.875rem' }
             }}
             disabled={[
-              { from: new Date(maxYear + 1, 0, 1), to: new Date(3000, 11, 31) }
+              { from: new Date(currentYear + 1, 0, 1), to: new Date(3000, 11, 31) }
             ]}
           />
-          <div className="flex justify-end gap-2 mt-2 pt-2 border-t">
+          <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
             <button
               type="button"
               onClick={() => { onChange(undefined); setIsOpen(false); }}
-              className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+              className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
             >
               Limpar
             </button>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="px-3 py-1.5 text-sm font-medium text-white bg-[#1B3B36] rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-white bg-[var(--primary)] rounded-lg hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: 'var(--primary)' }}
             >
-              OK
+              Confirmar
             </button>
           </div>
         </div>
