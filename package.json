@@ -9,12 +9,15 @@
     "start": "next start"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "react": "19.2.4",
+    "react-day-picker": "^9.14.0",
     "react-dom": "19.2.4",
+    "react-image-crop": "^11.0.10",
     "sst": "4.6.9"
   },
   "devDependencies": {

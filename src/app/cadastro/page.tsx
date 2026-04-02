@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Mail, Lock, Phone, MapPin, Calendar, ArrowRight } from "lucide-react";
+import { User, Mail, Lock, Phone, MapPin, Calendar, ArrowRight, Heart } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc, collection, query, onSnapshot } from "firebase/firestore";
+import { DatePickerInput } from "@/components/DatePicker";
 
 interface Sede {
   id: string;
@@ -22,7 +23,8 @@ export default function CadastroPage() {
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [nascimento, setNascimento] = useState("");
+  const [nascimento, setNascimento] = useState<Date | undefined>();
+  const [fielDesde, setFielDesde] = useState<Date | undefined>();
   const [telefone, setTelefone] = useState("");
   const [sede, setSede] = useState("");
   const [senha, setSenha] = useState("");
@@ -46,10 +48,25 @@ export default function CadastroPage() {
     setErro("");
     setLoading(true);
 
+    if (!nascimento) {
+      setErro("Por favor, selecione sua data de nascimento.");
+      setLoading(false);
+      return;
+    }
+
+    if (!fielDesde) {
+      setErro("Por favor, selecione desde quando você é fiel.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
       const user = userCredential.user;
+
+      // Send email verification
+      await sendEmailVerification(user);
 
       // Update Profile Name
       await updateProfile(user, { displayName: nome });
@@ -62,15 +79,17 @@ export default function CadastroPage() {
       await setDoc(doc(db, "users", user.uid), {
         nome,
         email,
-        nascimento,
+        nascimento: nascimento.toISOString(),
+        fielDesde: fielDesde.toISOString(),
         telefone,
         sede,
         role,
         createdAt: new Date().toISOString()
       });
 
-      // Success! Redirect to profile
-      router.push("/perfil");
+      // Success! Show message and redirect to login
+      alert("Conta criada! Verifique seu e-mail para ativar a conta.");
+      router.push("/login");
     } catch (error: any) {
       console.error(error);
       if (error.code === 'auth/email-already-in-use') {
@@ -125,18 +144,12 @@ export default function CadastroPage() {
           </div>
 
           <div className={styles.row}>
-            <div className={styles.inputGroup}>
-              <label>Nascimento*</label>
-              <div className={styles.inputWrapper}>
-                <Calendar size={18} />
-                <input 
-                  type="date" 
-                  value={nascimento}
-                  onChange={(e) => setNascimento(e.target.value)}
-                  required disabled={loading} 
-                />
-              </div>
-            </div>
+            <DatePickerInput
+              label="Nascimento*"
+              value={nascimento}
+              onChange={setNascimento}
+              placeholder="Selecione sua data de nascimento"
+            />
 
             <div className={styles.inputGroup}>
               <label>Telefone (Opcional)</label>
@@ -151,6 +164,15 @@ export default function CadastroPage() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className={styles.inputGroup}>
+            <DatePickerInput
+              label="Fiel Desde*"
+              value={fielDesde}
+              onChange={setFielDesde}
+              placeholder="Desde quando você é fiel da igreja?"
+            />
           </div>
 
           <div className={styles.inputGroup}>

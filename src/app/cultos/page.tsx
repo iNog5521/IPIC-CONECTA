@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
-import { MapPin, Clock, X, Calendar } from "lucide-react";
+import { MapPin, Clock, X, Calendar, Filter, ChevronDown } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -80,6 +80,18 @@ export default function CultosPage() {
         setCultos(ativos);
       }
       setLoadingCultos(false);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, "sedes"), where("active", "==", true));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Sede[];
+      setSedes(docs);
     });
     return () => unsub();
   }, []);
@@ -190,19 +202,40 @@ export default function CultosPage() {
       <div className={styles.sedesSelector}>
         <button 
           className={`${styles.sedeBtn} ${sedeSelecionada === "Geral" ? styles.active : ''}`}
-          onClick={() => setSedeSelecionada("Geral")}
+          onClick={() => {
+            setSedeSelecionada("Geral");
+            document.getElementById('cultoSedeDropdown')?.classList.remove(styles.show);
+          }}
         >
-          Geral
+          <Filter size={16} /> Todas as Sedes
         </button>
-        {sedes.map((sede: Sede) => (
-          <button 
-            key={sede.id} 
-            className={`${styles.sedeBtn} ${sedeSelecionada === sede.nome ? styles.active : ''}`}
-            onClick={() => setSedeSelecionada(sede.nome)}
-          >
-            {sede.nome}
-          </button>
-        ))}
+        {sedes.length > 0 && (
+          <div className={styles.sedeDropdown}>
+            <button 
+              className={`${styles.sedeBtn} ${sedeSelecionada !== "Geral" ? styles.active : ''}`}
+              onClick={() => {
+                const dropdown = document.getElementById('cultoSedeDropdown');
+                dropdown?.classList.toggle(styles.show);
+              }}
+            >
+              {sedeSelecionada === "Geral" ? "Sede" : sedeSelecionada} <ChevronDown size={16} />
+            </button>
+            <div id="cultoSedeDropdown" className={styles.sedeDropdownMenu}>
+              {sedes.map((sede) => (
+                <button
+                  key={sede.id}
+                  className={styles.sedeDropdownItem}
+                  onClick={() => {
+                    setSedeSelecionada(sede.nome);
+                    document.getElementById('cultoSedeDropdown')?.classList.remove(styles.show);
+                  }}
+                >
+                  {sede.nome}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={styles.agenda}>
@@ -229,6 +262,18 @@ export default function CultosPage() {
                       margin: '0 0 0.5rem 0'
                     }}>
                       {culto.description || "Sem descrição"}
+                    </p>
+                    <p style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '4px', 
+                      fontSize: '12px', 
+                      color: 'var(--primary)',
+                      fontWeight: '600',
+                      margin: 0
+                    }}>
+                      <MapPin size={12} />
+                      {culto.sede === "Geral" ? "Todas as Sedes" : culto.sede}
                     </p>
                     {(profile?.role === 'admin' || profile?.role === 'owner') && getConfirmadosCount(culto.name) > 0 && (
                       <p style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>

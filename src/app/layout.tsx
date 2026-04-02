@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "IPIC CONECTA",
   description: "App para organizar cultos e destacar avisos para a comunidade da Igreja.",
   themeColor: "#1B3B36",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

@@ -100,3 +100,23 @@ button {
     transform: translateX(-50%);
   }
 }
+
+.react-day-picker-custom {
+  --rdp-accent-color: var(--primary);
+  --rdp-background-color: var(--primary-faded);
+}
+
+.react-day-picker-custom .rdp-day_selected {
+  background-color: var(--primary) !important;
+  color: white !important;
+  border-radius: 50%;
+}
+
+.react-day-picker-custom .rdp-day:hover:not(.rdp-day_selected) {
+  background-color: var(--primary-faded) !important;
+  border-radius: 50%;
+}
+
+.react-day-picker-custom .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: var(--primary-faded) !important;
+}

@@ -1,8 +1,21 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Avatars: usuários só podem ler/escrever seus próprios arquivos
+    match /avatars/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Imagens públicas do admin
+    match /images/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.token.role in ['owner', 'admin'];
+    }
+    
+    // Qualquer arquivo autenticado
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
   }
 }

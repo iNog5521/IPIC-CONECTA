@@ -30,6 +30,13 @@
   margin-bottom: 1.5rem;
 }
 
+.logoImage {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
 .logoIcon {
   color: #1B3B36;
 }

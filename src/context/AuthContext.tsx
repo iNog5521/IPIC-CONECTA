@@ -31,6 +31,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let unsubProfile: (() => void) | undefined;
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      // Founder não precisa de verificação de e-mail
+      const isFounder = fbUser?.email?.toLowerCase() === 'inog5521@gmail.com';
+      
+      if (fbUser && !fbUser.emailVerified && !isFounder) {
+        // Usuário existe mas não verificou o e-mail (e não é founder)
+        // Não permite acesso completo, redireciona para verificar
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        window.location.href = "/login?verified=false";
+        return;
+      }
+      
       setUser(fbUser);
       
       if (unsubProfile) {

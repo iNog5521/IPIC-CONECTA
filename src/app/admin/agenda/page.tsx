@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
-import { Calendar, Clock, MapPin, Users, Plus, Trash2, Edit2, X, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, Trash2, Edit2, X, Loader2, ChevronDown } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -62,6 +62,20 @@ export default function AdminAgendaPage() {
   const [time, setTime] = useState("09:00");
   const [sede, setSede] = useState("Geral");
   const [active, setActive] = useState(true);
+  const [showDayDropdown, setShowDayDropdown] = useState(false);
+  const [showSedeDropdown, setShowSedeDropdown] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.customSelect')) {
+        setShowDayDropdown(false);
+        setShowSedeDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const qSedes = query(collection(db, "sedes"));
@@ -374,15 +388,27 @@ export default function AdminAgendaPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className={styles.formGroup}>
                   <label>Dia da Semana</label>
-                  <select 
-                    className={styles.select}
-                    value={day}
-                    onChange={(e) => setDay(e.target.value)}
-                  >
-                    {DIAS_SEMANA.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
+                  <div className={`${styles.customSelect} customSelect`}>
+                    <button 
+                      className={styles.selectBtn}
+                      onClick={(e) => { e.stopPropagation(); setShowDayDropdown(!showDayDropdown); }}
+                    >
+                      {day} <ChevronDown size={16} />
+                    </button>
+                    {showDayDropdown && (
+                      <div className={styles.selectMenu}>
+                        {DIAS_SEMANA.map((d) => (
+                          <button
+                            key={d}
+                            className={styles.selectItem}
+                            onClick={() => { setDay(d); setShowDayDropdown(false); }}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -399,16 +425,33 @@ export default function AdminAgendaPage() {
 
               <div className={styles.formGroup}>
                 <label>Sede</label>
-                <select 
-                  className={styles.select}
-                  value={sede}
-                  onChange={(e) => setSede(e.target.value)}
-                >
-                  <option value="Geral">Geral (Todas)</option>
-                  {sedes.map((s) => (
-                    <option key={s.id} value={s.nome}>{s.nome}</option>
-                  ))}
-                </select>
+                <div className={`${styles.customSelect} customSelect`}>
+                  <button 
+                    className={styles.selectBtn}
+                    onClick={(e) => { e.stopPropagation(); setShowSedeDropdown(!showSedeDropdown); }}
+                  >
+                    {sede} <ChevronDown size={16} />
+                  </button>
+                  {showSedeDropdown && (
+                    <div className={styles.selectMenu}>
+                      <button
+                        className={styles.selectItem}
+                        onClick={() => { setSede("Geral"); setShowSedeDropdown(false); }}
+                      >
+                        Geral (Todas)
+                      </button>
+                      {sedes.map((s) => (
+                        <button
+                          key={s.id}
+                          className={styles.selectItem}
+                          onClick={() => { setSede(s.nome); setShowSedeDropdown(false); }}
+                        >
+                          {s.nome}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {editingCulto && (

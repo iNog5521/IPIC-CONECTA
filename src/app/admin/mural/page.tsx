@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
-import { Plus, Image as ImageIcon, Trash2, Edit2, MapPin, Upload, X, Loader2 } from "lucide-react";
+import { Plus, Image as ImageIcon, Trash2, Edit2, MapPin, Upload, X, Loader2, ChevronDown } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -49,6 +49,23 @@ export default function AdminMuralPage() {
   const [sede, setSede] = useState("Geral");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showSedeDropdown, setShowSedeDropdown] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  useEffect(() => {
+    if (!db) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.customSelect')) {
+        setShowSedeDropdown(false);
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!db) return;
@@ -284,22 +301,57 @@ export default function AdminMuralPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className={styles.formGroup}>
                   <label>Sede</label>
-                  <select className={styles.select} value={sede} onChange={(e) => setSede(e.target.value)}>
-                    <option value="Geral">Geral (Todos)</option>
-                    {sedes.map((s) => (
-                      <option key={s.id} value={s.nome}>{s.nome}</option>
-                    ))}
-                  </select>
+                  <div className={`${styles.customSelect} customSelect`}>
+                    <button 
+                      className={styles.selectBtn}
+                      onClick={() => setShowSedeDropdown(!showSedeDropdown)}
+                    >
+                      {sede} <ChevronDown size={16} />
+                    </button>
+                    {showSedeDropdown && (
+                      <div className={styles.selectMenu}>
+                        <button
+                          className={styles.selectItem}
+                          onClick={() => { setSede("Geral"); setShowSedeDropdown(false); }}
+                        >
+                          Geral (Todos)
+                        </button>
+                        {sedes.map((s) => (
+                          <button
+                            key={s.id}
+                            className={styles.selectItem}
+                            onClick={() => { setSede(s.nome); setShowSedeDropdown(false); }}
+                          >
+                            {s.nome}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className={styles.formGroup}>
                   <label>Categoria</label>
-                  <select className={styles.select} value={category} onChange={(e) => setCategory(e.target.value)}>
-                    <option value="Eventos">Eventos</option>
-                    <option value="Social">Social</option>
-                    <option value="Liderança">Liderança</option>
-                    <option value="Aviso">Aviso</option>
-                    <option value="Outros">Outros</option>
-                  </select>
+                  <div className={`${styles.customSelect} customSelect`}>
+                    <button 
+                      className={styles.selectBtn}
+                      onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                    >
+                      {category} <ChevronDown size={16} />
+                    </button>
+                    {showCategoryDropdown && (
+                      <div className={styles.selectMenu}>
+                        {["Eventos", "Social", "Liderança", "Aviso", "Outros"].map((cat) => (
+                          <button
+                            key={cat}
+                            className={styles.selectItem}
+                            onClick={() => { setCategory(cat); setShowCategoryDropdown(false); }}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

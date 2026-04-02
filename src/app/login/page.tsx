@@ -1,20 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Mail, Lock, Globe, ArrowRight, Heart } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Mail, Lock, Globe, ArrowRight, AlertCircle } from "lucide-react";
+import Image from "next/image";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("verified") === "false") {
+      setErro("⚠️ E-mail não verificado. Verifique sua caixa de entrada e clique no link de confirmação.");
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +30,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, senha);
-      router.push("/perfil"); // Vai para a aba do perfil após o login
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+      const user = userCredential.user;
+      
+      // Founder não precisa de verificação de e-mail
+      const isFounder = user.email?.toLowerCase() === 'inog5521@gmail.com';
+      
+      if (!user.emailVerified && !isFounder) {
+        setErro("⚠️ E-mail não verificado. Verifique sua caixa de entrada e clique no link de confirmação.");
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
+      
+      router.push("/perfil");
     } catch (error: any) {
       console.error(error);
       setErro("E-mail ou senha incorretos.");
@@ -69,7 +89,13 @@ export default function LoginPage() {
       <div className={styles.authCard}>
         <div className={styles.header}>
           <div className={styles.logo}>
-            <Heart size={32} className={styles.logoIcon} />
+            <Image 
+              src="/ipic-conecta-logo.png" 
+              alt="IPIC CONECTA" 
+              width={64} 
+              height={64}
+              className={styles.logoImage}
+            />
             <span className={styles.logoText}>IPIC CONECTA</span>
           </div>
           <h1>Bem-vindo de volta!</h1>
