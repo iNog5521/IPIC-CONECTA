@@ -66,7 +66,11 @@ export default function CadastroPage() {
       const user = userCredential.user;
 
       // Send email verification
-      await sendEmailVerification(user);
+      try {
+        await sendEmailVerification(user);
+      } catch (verifyError) {
+        console.error("Erro ao enviar email de verificação:", verifyError);
+      }
 
       // Update Profile Name
       await updateProfile(user, { displayName: nome });
