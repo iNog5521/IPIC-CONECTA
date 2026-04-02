@@ -36,7 +36,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (fbUser && !fbUser.emailVerified && !isFounder) {
         // Usuário existe mas não verificou o e-mail (e não é founder)
-        // Não permite acesso completo, redireciona para verificar
+        // Faz logout e redireciona para verificar
+        await auth.signOut();
         setUser(null);
         setProfile(null);
         setLoading(false);
