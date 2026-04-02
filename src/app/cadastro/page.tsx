@@ -8,7 +8,7 @@ import { User, Mail, Lock, Phone, MapPin, Calendar, ArrowRight, Heart } from "lu
 import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc, collection, query, onSnapshot } from "firebase/firestore";
-import { DatePickerInput } from "@/components/DatePicker";
+import { CalendarInput } from "@/components/ui/calendar-input";
 
 interface Sede {
   id: string;
@@ -148,7 +148,7 @@ export default function CadastroPage() {
           </div>
 
           <div className={styles.row}>
-            <DatePickerInput
+            <CalendarInput
               label="Nascimento*"
               value={nascimento}
               onChange={setNascimento}
@@ -171,7 +171,7 @@ export default function CadastroPage() {
           </div>
 
           <div className={styles.inputGroup}>
-            <DatePickerInput
+            <CalendarInput
               label="Fiel Desde*"
               value={fielDesde}
               onChange={setFielDesde}
