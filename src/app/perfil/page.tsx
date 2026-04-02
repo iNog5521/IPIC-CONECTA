@@ -23,7 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { signOut, sendPasswordResetEmail, updateProfile } from "firebase/auth";
-import { doc, updateDoc, collection, query, onSnapshot, deleteDoc, where, orderBy } from "firebase/firestore";
+import { doc, updateDoc, setDoc, collection, query, onSnapshot, deleteDoc, where, orderBy } from "firebase/firestore";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
@@ -101,9 +101,10 @@ export default function PerfilPage() {
     if (!sedeParaSalvar || !user) return;
     
     try {
-      await updateDoc(doc(db, "users", user.uid), {
+      // Usa setDoc com merge para criar o documento se não existir
+      await setDoc(doc(db, "users", user.uid), {
         sede: sedeParaSalvar
-      });
+      }, { merge: true });
       setShowSedeModal(false);
       alert("Sede atualizada com sucesso!");
     } catch (error) {
