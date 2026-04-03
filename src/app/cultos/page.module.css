@@ -109,26 +109,49 @@
   border-radius: 16px;
   padding: 1.25rem;
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   margin-bottom: 1rem;
 }
 
+@media (min-width: 480px) {
+  .cultoCard {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
 .timeInfo {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: flex-start;
+  gap: 0.5rem;
   color: var(--primary);
   font-weight: 800;
-  font-size: 1.1rem;
-  min-width: 70px;
+  font-size: 1rem;
 }
 
 .timeInfo span {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (min-width: 480px) {
+  .timeInfo {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 1.1rem;
+    min-width: 70px;
+  }
+  
+  .timeInfo span {
+    font-size: 0.9rem;
+  }
 }
 
 .cultoDetails {
@@ -137,9 +160,20 @@
 
 .cultoActions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .cultoActions {
+    flex-direction: column;
+    align-items: flex-end;
+    width: auto;
+    gap: 0.25rem;
+  }
 }
 
 .cultoDetails h3 {
@@ -160,6 +194,7 @@
   border-radius: 8px;
   font-weight: 700;
   font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .confirmBtn:active {

@@ -318,23 +318,21 @@ export default function CultosPage() {
                     {!user && (
                       <span style={{ fontSize: '12px', color: '#888' }}>Login necessário</span>
                     )}
-                    {(culto.description && culto.description.length > 50) && (
-                      <button 
-                        onClick={() => setSelectedCulto(culto)}
-                        style={{ 
-                          background: 'none', 
-                          border: 'none', 
-                          color: 'var(--primary)', 
-                          fontWeight: '700', 
-                          fontSize: '0.75rem', 
-                          cursor: 'pointer',
-                          padding: 0,
-                          marginTop: '4px'
-                        }}
-                      >
-                        ...ler mais
-                      </button>
-                    )}
+                    <button 
+                      onClick={() => setSelectedCulto(culto)}
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: 'var(--primary)', 
+                        fontWeight: '700', 
+                        fontSize: '0.75rem', 
+                        cursor: 'pointer',
+                        padding: '0.25rem 0.5rem',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      Ler mais
+                    </button>
                   </div>
                 </div>
               ))}
