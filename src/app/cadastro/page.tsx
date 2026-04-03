@@ -151,12 +151,10 @@ export default function CadastroPage() {
           <div className={styles.row}>
             <div className={styles.inputGroup}>
               <label>Nascimento*</label>
-              <div className={styles.inputWrapper}>
-                <CalendarInput
-                  value={nascimento}
-                  onChange={setNascimento}
-                />
-              </div>
+              <CalendarInput
+                value={nascimento}
+                onChange={setNascimento}
+              />
             </div>
 
             <div className={styles.inputGroup}>
@@ -176,12 +174,10 @@ export default function CadastroPage() {
 
           <div className={styles.inputGroup}>
             <label>Fiel Desde*</label>
-            <div className={styles.inputWrapper}>
-              <CalendarInput
-                value={fielDesde}
-                onChange={setFielDesde}
-              />
-            </div>
+            <CalendarInput
+              value={fielDesde}
+              onChange={setFielDesde}
+            />
           </div>
 
           <div className={styles.inputGroup}>

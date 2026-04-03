@@ -1,15 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogTitle,
-} from "@/components/ui/dialog"
 
 function formatDate(date: Date | undefined) {
   if (!date) return ""
@@ -17,7 +10,6 @@ function formatDate(date: Date | undefined) {
 }
 
 interface CalendarInputProps {
-  label?: string
   value: Date | undefined
   onChange: (date: Date | undefined) => void
   placeholder?: string
@@ -34,7 +26,7 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay()
 }
 
-export function CalendarInput({ label, value, onChange, placeholder = "Selecione uma data" }: CalendarInputProps) {
+export function CalendarInput({ value, onChange, placeholder = "Selecione uma data" }: CalendarInputProps) {
   const [open, setOpen] = React.useState(false)
   const [viewDate, setViewDate] = React.useState<Date>(value || new Date())
 
@@ -72,43 +64,46 @@ export function CalendarInput({ label, value, onChange, placeholder = "Selecione
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {label && <Label style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{label}</Label>}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full justify-start font-normal"
-            style={{ 
-              borderColor: open ? 'var(--primary)' : undefined, 
-              boxShadow: open ? '0 0 0 2px var(--primary-faded)' : undefined,
-              backgroundColor: 'var(--background)'
-            }}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" style={{ color: value ? 'var(--primary)' : '#9ca3af' }} />
-            {value ? formatDate(value) : <span style={{ color: '#9ca3af' }}>{placeholder}</span>}
-          </Button>
-        </DialogTrigger>
-        <DialogContent 
-          className="p-0" 
-          style={{ 
-            zIndex: 9999, 
-            backgroundColor: 'white', 
-            borderRadius: '16px', 
-            border: '1px solid #e5e7eb', 
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)', 
-            maxWidth: 'calc(100vw - 32px)',
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)'
-          }}
-        >
-          <DialogTitle style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', border: 0 }}>
-            Selecionar data
-          </DialogTitle>
-          <div style={{ padding: '1.5rem', minWidth: '320px', backgroundColor: 'white', borderRadius: '16px' }}>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem',
+          padding: '0.75rem 1rem',
+          borderRadius: '12px',
+          border: '1px solid var(--border)',
+          background: 'var(--background)',
+          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
+          cursor: 'pointer',
+          width: '100%',
+          fontWeight: value ? '500' : '400',
+          fontSize: '0.95rem'
+        }}
+      >
+        <CalendarIcon size={18} style={{ color: value ? 'var(--primary)' : 'var(--text-muted)' }} />
+        {value ? formatDate(value) : placeholder}
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)'
+        }} onClick={() => setOpen(false)}>
+          <div style={{
+            background: 'white', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '360px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)' }}>Selecionar Data</h2>
+              <button onClick={() => setOpen(false)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} style={{ padding: '0.5rem', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
                 <ChevronLeft className="size-5" style={{ color: 'var(--primary)' }} />
               </Button>
@@ -134,6 +129,7 @@ export function CalendarInput({ label, value, onChange, placeholder = "Selecione
                 <ChevronRight className="size-5" style={{ color: 'var(--primary)' }} />
               </Button>
             </div>
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '0.5rem' }}>
               {DAYS.map((day) => (
                 <div key={day} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', padding: '0.5rem' }}>
@@ -173,17 +169,26 @@ export function CalendarInput({ label, value, onChange, placeholder = "Selecione
                 </button>
               ))}
             </div>
-            {value && (
+            
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              {value && (
+                <button
+                  onClick={() => { onChange(undefined); setOpen(false); }}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#f3f4f6', color: '#6b7280', fontWeight: 500, cursor: 'pointer' }}
+                >
+                  Limpar
+                </button>
+              )}
               <button
-                onClick={() => { onChange(undefined); setOpen(false); }}
-                style={{ width: '100%', marginTop: '1rem', padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#f3f4f6', color: '#6b7280', fontWeight: 500, cursor: 'pointer' }}
+                onClick={() => setOpen(false)}
+                style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
               >
-                Limpar data
+                Confirmar
               </button>
-            )}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        </div>
+      )}
+    </>
   )
 }
