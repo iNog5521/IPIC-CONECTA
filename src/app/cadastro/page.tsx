@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Mail, Lock, Phone, MapPin, Calendar, ArrowRight, Heart } from "lucide-react";
+import { User, Mail, Lock, Phone, MapPin, Calendar, ArrowRight, Heart, X } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc, collection, query, onSnapshot } from "firebase/firestore";
@@ -27,6 +27,7 @@ export default function CadastroPage() {
   const [fielDesde, setFielDesde] = useState<Date | undefined>();
   const [telefone, setTelefone] = useState("");
   const [sede, setSede] = useState("");
+  const [showSedeModal, setShowSedeModal] = useState(false);
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
@@ -148,11 +149,15 @@ export default function CadastroPage() {
           </div>
 
           <div className={styles.row}>
-            <CalendarInput
-              label="Nascimento*"
-              value={nascimento}
-              onChange={setNascimento}
-            />
+            <div className={styles.inputGroup}>
+              <label>Nascimento*</label>
+              <div className={styles.inputWrapper}>
+                <CalendarInput
+                  value={nascimento}
+                  onChange={setNascimento}
+                />
+              </div>
+            </div>
 
             <div className={styles.inputGroup}>
               <label>Telefone (Opcional)</label>
@@ -170,30 +175,39 @@ export default function CadastroPage() {
           </div>
 
           <div className={styles.inputGroup}>
-            <CalendarInput
-              label="Fiel Desde*"
-              value={fielDesde}
-              onChange={setFielDesde}
-            />
+            <label>Fiel Desde*</label>
+            <div className={styles.inputWrapper}>
+              <CalendarInput
+                value={fielDesde}
+                onChange={setFielDesde}
+              />
+            </div>
           </div>
 
           <div className={styles.inputGroup}>
             <label>Sua Sede*</label>
-            <div className={styles.inputWrapper}>
+            <button 
+              type="button"
+              onClick={() => setShowSedeModal(true)}
+              disabled={loading}
+              className={styles.select}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '12px',
+                border: '1px solid var(--border)',
+                background: 'var(--background)',
+                color: sede ? 'var(--text-primary)' : 'var(--text-muted)',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                width: '100%',
+                fontWeight: sede ? '500' : '400'
+              }}
+            >
               <MapPin size={18} />
-              <select 
-                required 
-                className={styles.select}
-                value={sede}
-                onChange={(e) => setSede(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Selecione sua sede...</option>
-                {sedes.map((s: Sede) => (
-                  <option key={s.id} value={s.nome}>{s.nome}</option>
-                ))}
-              </select>
-            </div>
+              {sede || "Selecione sua sede..."}
+            </button>
           </div>
 
           <div className={styles.inputGroup}>
@@ -219,6 +233,42 @@ export default function CadastroPage() {
           Já tem uma conta? <Link href="/login">Fazer Login</Link>
         </p>
       </div>
+
+      {showSedeModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)'
+        }} onClick={() => setShowSedeModal(false)}>
+          <div style={{
+            background: 'white', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '400px', maxHeight: '80vh', overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)' }}>Selecione sua Sede</h2>
+              <button onClick={() => setShowSedeModal(false)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {sedes.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setSede(s.nome); setShowSedeModal(false); }}
+                  style={{
+                    padding: '0.75rem 1rem', borderRadius: '12px', border: sede === s.nome ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    background: sede === s.nome ? 'var(--primary-faded)' : 'white', textAlign: 'left', cursor: 'pointer', fontWeight: sede === s.nome ? '700' : '400',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem'
+                  }}
+                >
+                  <MapPin size={16} style={{ color: sede === s.nome ? 'var(--primary)' : 'var(--text-muted)' }} />
+                  {s.nome}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowSedeModal(false)} style={{ marginTop: '1rem', width: '100%', padding: '0.75rem', borderRadius: '12px', background: '#f3f4f6', border: 'none', cursor: 'pointer', fontWeight: '600' }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
