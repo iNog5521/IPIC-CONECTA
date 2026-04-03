@@ -46,16 +46,18 @@
 
 .filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
   align-items: center;
+  overflow-x: auto;
 }
 
 .filterWrapper {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
   width: 100%;
+  overflow-x: auto;
 }
 
 .filterDropdown {
@@ -101,6 +103,7 @@
 }
 
 .filterBtn {
+  flex-shrink: 0;
   background-color: white;
   border: 1px solid var(--border);
   padding: 0.5rem 1rem;
@@ -227,7 +230,8 @@
   }
 
   .filters {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 }
 
