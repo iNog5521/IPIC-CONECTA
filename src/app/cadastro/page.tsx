@@ -66,42 +66,32 @@ export default function CadastroPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
       const user = userCredential.user;
 
-      // Send email verification
-      try {
-        await sendEmailVerification(user);
-      } catch (verifyError) {
-        console.error("Erro ao enviar email de verificação:", verifyError);
-      }
-
-      // Update Profile Name
-      await updateProfile(user, { displayName: nome });
-
-      // Security Logic: Set owner role automatically for the master email
       const isOwner = email.toLowerCase() === "inog5521@gmail.com";
       const role = isOwner ? "owner" : "user";
 
-      // Force refresh to ensure auth state is propagated before Firestore write
-      await user.getIdToken(true);
+      const userData = {
+        uid: user.uid,
+        nome: nome,
+        email: email.toLowerCase(),
+        nascimento: nascimento.toISOString(),
+        fielDesde: fielDesde.toISOString(),
+        telefone: telefone || "",
+        sede: sede,
+        role: role,
+        createdAt: new Date().toISOString()
+      };
 
-      // Save additional profile data in Firestore collection "users"
+      await setDoc(doc(db, "users", user.uid), userData);
+      console.log("Perfil salvo com sucesso para UID:", user.uid);
+
+      await updateProfile(user, { displayName: nome });
+      
       try {
-        await setDoc(doc(db, "users", user.uid), {
-          nome,
-          email,
-          nascimento: nascimento.toISOString(),
-          fielDesde: fielDesde.toISOString(),
-          telefone,
-          sede,
-          role,
-          createdAt: new Date().toISOString()
-        }, { merge: true });
-        console.log("Perfil salvo com sucesso:", { nome, email, nascimento, fielDesde, telefone, sede, role });
-      } catch (firestoreError) {
-        console.error("Erro ao salvar no Firestore:", firestoreError);
-        // Don't block the flow, the user can still complete registration
+        await sendEmailVerification(user);
+      } catch (verifyError) {
+        console.warn("Email de verificação não enviado, mas dados foram salvos.");
       }
 
-      // Success! Show message and redirect to login
       alert("Conta criada! Verifique seu e-mail para ativar a conta.");
       router.push("/login?verified=pending");
     } catch (error: any) {
