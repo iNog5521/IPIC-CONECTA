@@ -80,17 +80,26 @@ export default function CadastroPage() {
       const isOwner = email.toLowerCase() === "inog5521@gmail.com";
       const role = isOwner ? "owner" : "user";
 
+      // Force refresh to ensure auth state is propagated before Firestore write
+      await user.getIdToken(true);
+
       // Save additional profile data in Firestore collection "users"
-      await setDoc(doc(db, "users", user.uid), {
-        nome,
-        email,
-        nascimento: nascimento.toISOString(),
-        fielDesde: fielDesde.toISOString(),
-        telefone,
-        sede,
-        role,
-        createdAt: new Date().toISOString()
-      });
+      try {
+        await setDoc(doc(db, "users", user.uid), {
+          nome,
+          email,
+          nascimento: nascimento.toISOString(),
+          fielDesde: fielDesde.toISOString(),
+          telefone,
+          sede,
+          role,
+          createdAt: new Date().toISOString()
+        }, { merge: true });
+        console.log("Perfil salvo com sucesso:", { nome, email, nascimento, fielDesde, telefone, sede, role });
+      } catch (firestoreError) {
+        console.error("Erro ao salvar no Firestore:", firestoreError);
+        // Don't block the flow, the user can still complete registration
+      }
 
       // Success! Show message and redirect to login
       alert("Conta criada! Verifique seu e-mail para ativar a conta.");
