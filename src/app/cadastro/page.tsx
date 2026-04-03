@@ -84,6 +84,7 @@ export default function CadastroPage() {
       await setDoc(doc(db, "users", user.uid), userData);
       console.log("Perfil salvo com sucesso para UID:", user.uid);
 
+      await user.getIdToken(true);
       await updateProfile(user, { displayName: nome });
       
       try {
