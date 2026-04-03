@@ -46,18 +46,16 @@
 
 .filters {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  overflow-x: auto;
 }
 
 .filterWrapper {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.5rem;
   width: 100%;
-  overflow-x: auto;
 }
 
 .filterDropdown {
@@ -230,8 +228,7 @@
   }
 
   .filters {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-wrap: wrap;
   }
 }
 
