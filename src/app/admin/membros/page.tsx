@@ -215,42 +215,40 @@ export default function AdminMembrosPage() {
 
       <div className={styles.filters}>
         <div className={styles.filterWrapper}>
-          <button 
-            className={`${styles.filterBtn} ${sedeSelecionada === "todas" ? styles.activeFilter : ''}`}
-            onClick={() => {
-              setSedeSelecionada("todas");
-              document.getElementById('sedeDropdown')?.classList.remove(styles.show);
-            }}
-          >
-            <Filter size={16} /> Todas as Sedes
-          </button>
-          {sedes.length > 0 && (
-            <div className={styles.filterDropdown}>
-              <button 
-                className={`${styles.filterBtn} ${sedeSelecionada !== "todas" ? styles.activeFilter : ''}`}
+          <div className={styles.filterDropdown}>
+            <button 
+              className={`${styles.filterBtn} ${styles.activeFilter}`}
+              onClick={() => {
+                const dropdown = document.getElementById('sedeDropdown');
+                dropdown?.classList.toggle(styles.show);
+              }}
+            >
+              <Filter size={16} /> {sedeSelecionada === "todas" ? "Todas as Sedes" : sedeSelecionada} <ChevronDown size={16} />
+            </button>
+            <div id="sedeDropdown" className={styles.dropdownMenu}>
+              <button
+                className={styles.dropdownItem}
                 onClick={() => {
-                  const dropdown = document.getElementById('sedeDropdown');
-                  dropdown?.classList.toggle(styles.show);
+                  setSedeSelecionada("todas");
+                  document.getElementById('sedeDropdown')?.classList.remove(styles.show);
                 }}
               >
-                {sedeSelecionada === "todas" ? "Sede" : sedeSelecionada} <ChevronDown size={16} />
+                Todas as Sedes
               </button>
-              <div id="sedeDropdown" className={styles.dropdownMenu}>
-                {sedes.map((sede) => (
-                  <button
-                    key={sede.id}
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setSedeSelecionada(sede.nome);
-                      document.getElementById('sedeDropdown')?.classList.remove(styles.show);
-                    }}
-                  >
-                    {sede.nome}
-                  </button>
-                ))}
-              </div>
+              {sedes.map((sede) => (
+                <button
+                  key={sede.id}
+                  className={styles.dropdownItem}
+                  onClick={() => {
+                    setSedeSelecionada(sede.nome);
+                    document.getElementById('sedeDropdown')?.classList.remove(styles.show);
+                  }}
+                >
+                  {sede.nome}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
           <button 
             className={styles.filterBtn}
             onClick={() => setShowHistory(true)}
