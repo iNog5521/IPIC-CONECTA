@@ -118,7 +118,7 @@ export function CalendarInput({ label, value, onChange, placeholder = "Selecione
               <span className="sr-only">Selecionar data</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end" alignOffset={-8} sideOffset={10} style={{ zIndex: 9999, backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+          <PopoverContent className="w-auto p-0" side="bottom" align="center" sideOffset={8} avoidCollisions={true} style={{ zIndex: 9999, backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxWidth: 'calc(100vw - 32px)' }}>
             <div style={{ padding: '1rem', minWidth: '300px', backgroundColor: 'white', borderRadius: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} style={{ padding: '0.5rem', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>

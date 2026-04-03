@@ -152,7 +152,6 @@ export default function CadastroPage() {
               label="Nascimento*"
               value={nascimento}
               onChange={setNascimento}
-              placeholder="Selecione sua data de nascimento"
             />
 
             <div className={styles.inputGroup}>
@@ -175,7 +174,6 @@ export default function CadastroPage() {
               label="Fiel Desde*"
               value={fielDesde}
               onChange={setFielDesde}
-              placeholder="Desde quando você é fiel da igreja?"
             />
           </div>
 
