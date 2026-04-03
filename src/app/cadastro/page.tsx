@@ -88,8 +88,9 @@ export default function CadastroPage() {
       
       try {
         await sendEmailVerification(user);
-      } catch (verifyError) {
-        console.warn("Email de verificação não enviado, mas dados foram salvos.");
+        console.log("Email de verificação enviado");
+      } catch (verifyError: any) {
+        console.warn("Email de verificação não enviado:", verifyError.code || verifyError.message);
       }
 
       alert("Conta criada! Verifique seu e-mail para ativar a conta.");
