@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import { ChevronRight, Calendar, MapPin, Loader2, Info } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, onSnapshot, where } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
-import Link from "next/link";
 
 interface Aviso {
   id: string;
@@ -22,31 +21,39 @@ export default function MuralPage() {
   const { profile } = useAuth();
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   useEffect(() => {
     if (!db) return;
 
-    // Buscamos todos os avisos e filtramos no cliente para garantir 
-    // que avisos "Geral" sempre apareçam e os da sede do usuário também.
-    // Firestore não suporta bem OR complexos sem índices pesados, 
-    // então filtrar no client é mais seguro para esta escala.
     const q = query(collection(db, "avisos"), orderBy("createdAt", "desc"));
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allDocs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Aviso[];
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const allDocs = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Aviso[];
 
-      // Filtro por Sede: Geral + Sede do Usuário
-      const userSede = profile?.sede || "Geral";
-      const filtered = allDocs.filter(aviso => 
-        aviso.sede === "Geral" || aviso.sede === userSede
-      );
+        const userSede = profile?.sede || "Geral";
+        const filtered = allDocs.filter(aviso => 
+          aviso.sede === "Geral" || aviso.sede === userSede
+        );
 
-      setAvisos(filtered);
-      setLoading(false);
-    });
+        setAvisos(filtered);
+        setLoading(false);
+      },
+      (err) => {
+        if (err.code === "permission-denied") {
+          setPermissionDenied(true);
+          setLoading(false);
+          return;
+        }
+        setError(err.code);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [profile?.sede]);
@@ -78,6 +85,18 @@ export default function MuralPage() {
         <div className={styles.loadingContainer}>
           <Loader2 size={40} className="animate-spin" style={{ color: 'var(--primary)' }} />
           <p>Carregando novidades...</p>
+        </div>
+      ) : permissionDenied ? (
+        <div className={styles.emptyContainer}>
+          <div className={styles.emptyIcon}><Info size={48} /></div>
+          <h2>Nenhum aviso encontrado</h2>
+          <p>Faça login para ver os avisos da sua sede ou aguarde novos avisos.</p>
+        </div>
+      ) : error ? (
+        <div className={styles.emptyContainer}>
+          <div className={styles.emptyIcon}><Info size={48} /></div>
+          <h2>Tudo tranquilo por aqui</h2>
+          <p>Não há avisos específicos para sua sede no momento.</p>
         </div>
       ) : avisos.length === 0 ? (
         <div className={styles.emptyContainer}>

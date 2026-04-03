@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -13,8 +13,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "IPIC CONECTA",
   description: "App para organizar cultos e destacar avisos para a comunidade da Igreja.",
-  themeColor: "#1B3B36",
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1B3B36",
 };
 
 export default function RootLayout({

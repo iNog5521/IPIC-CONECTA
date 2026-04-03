@@ -55,6 +55,7 @@ export default function CultosPage() {
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [cultos, setCultos] = useState<Culto[]>([]);
   const [loadingCultos, setLoadingCultos] = useState(true);
+  const [cultosError, setCultosError] = useState<string | null>(null);
   const [sedeSelecionada, setSedeSelecionada] = useState("Geral");
   const [confirmacoes, setConfirmacoes] = useState<Confirmacao[]>([]);
   const [loadingConfirmacoes, setLoadingConfirmacoes] = useState(true);
@@ -64,23 +65,31 @@ export default function CultosPage() {
 
   useEffect(() => {
     const q = query(collection(db, "cultos"));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Culto[];
-      const ativos = docs.filter((c: Culto) => c.active);
-      ativos.sort((a, b) => {
-        const dayOrder = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-        const dayCompare = dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
-        if (dayCompare !== 0) return dayCompare;
-        return a.time.localeCompare(b.time);
-      });
-      if (ativos.length > 0) {
-        setCultos(ativos);
+    let unsub: () => void;
+    
+    unsub = onSnapshot(q, 
+      (snapshot) => {
+        const docs = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Culto[];
+        const ativos = docs.filter((c: Culto) => c.active);
+        ativos.sort((a, b) => {
+          const dayOrder = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+          const dayCompare = dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+          if (dayCompare !== 0) return dayCompare;
+          return a.time.localeCompare(b.time);
+        });
+        if (ativos.length > 0) {
+          setCultos(ativos);
+        }
+        setLoadingCultos(false);
+      },
+      (err) => {
+        setCultosError(err.code);
+        setLoadingCultos(false);
       }
-      setLoadingCultos(false);
-    });
+    );
     return () => unsub();
   }, []);
 
@@ -92,7 +101,7 @@ export default function CultosPage() {
         ...doc.data()
       })) as Sede[];
       setSedes(docs);
-    });
+    }, (err) => { /* silenciar */ });
     return () => unsub();
   }, []);
 
@@ -107,7 +116,7 @@ export default function CultosPage() {
       })) as Confirmacao[];
       setConfirmacoes(docs);
       setLoadingConfirmacoes(false);
-    });
+    }, (err) => { /* silenciar */ });
 
     return () => unsubscribe();
   }, [user]);
@@ -120,7 +129,7 @@ export default function CultosPage() {
         ...doc.data()
       })) as Confirmacao[];
       setTodosConfirmados(docs);
-    });
+    }, (err) => { /* silenciar */ });
 
     return () => unsubscribe();
   }, []);
@@ -178,6 +187,14 @@ export default function CultosPage() {
     return (
       <div className={styles.container} style={{ padding: '2rem', textAlign: 'center' }}>
         <p>Carregando...</p>
+      </div>
+    );
+  }
+
+  if (cultosError) {
+    return (
+      <div className={styles.container} style={{ padding: '2rem', textAlign: 'center' }}>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Faça login para ver a programação.</p>
       </div>
     );
   }

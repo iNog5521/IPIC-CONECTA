@@ -37,6 +37,8 @@ export default function Home() {
         ...doc.data()
       })) as Sede[];
       setSedes(docs.filter((s: Sede) => s.active));
+    }, (err) => {
+      // Silenciar erros de permissão
     });
 
     const qCultos = query(collection(db, "cultos"));
@@ -46,6 +48,8 @@ export default function Home() {
         ...doc.data()
       })) as Culto[];
       setCultos(docs.filter((c: Culto) => c.active));
+    }, (err) => {
+      // Silenciar erros de permissão
     });
 
     const qPalavra = query(collection(db, "palavra"));
@@ -57,6 +61,8 @@ export default function Home() {
           referencia: docData.referencia
         });
       }
+    }, (err) => {
+      // Silenciar erros de permissão
     });
 
     return () => {
