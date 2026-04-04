@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { toast } from "sonner";
 import { Sede, Culto, Confirmacao } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
 
 
 
@@ -39,6 +40,21 @@ export default function AdminAgendaPage() {
   const [active, setActive] = useState(true);
   const [showDayDropdown, setShowDayDropdown] = useState(false);
   const [showSedeDropdown, setShowSedeDropdown] = useState(false);
+
+  // Modal de confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -160,28 +176,41 @@ export default function AdminAgendaPage() {
     }
   };
 
-  const handleDelete = async (culto: Culto) => {
-    if (!confirm(`Tem certeza que deseja excluir "${culto.name}"?`)) return;
-
-    try {
-      await deleteDoc(doc(db, "cultos", culto.id));
-      toast.success("Culto excluído.");
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
-      toast.error("Erro ao excluir culto.");
-    }
+  const handleDelete = (culto: Culto) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Confirmar Exclusão",
+      message: `Tem certeza que deseja excluir o culto "${culto.name}"? Esta ação não pode ser desfeita.`,
+      isDestructive: true,
+      confirmText: "Excluir Culto",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "cultos", culto.id));
+          toast.success("Culto excluído.");
+        } catch (error) {
+          console.error("Erro ao excluir:", error);
+          toast.error("Erro ao excluir culto.");
+        }
+      }
+    });
   };
 
-  const handleDeleteConfirmacao = async (confirmacao: Confirmacao) => {
-    if (!confirm("Remover esta confirmação de presença?")) return;
-
-    try {
-      await deleteDoc(doc(db, "confirmacoes", confirmacao.id));
-      toast.success("Presença removida.");
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
-      toast.error("Erro ao excluir.");
-    }
+  const handleDeleteConfirmacao = (confirmacao: Confirmacao) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Remover Presença",
+      message: `Deseja remover a confirmação de presença de "${confirmacao.userName}"?`,
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "confirmacoes", confirmacao.id));
+          toast.success("Presença removida.");
+        } catch (error) {
+          console.error("Erro ao excluir:", error);
+          toast.error("Erro ao excluir.");
+        }
+      }
+    });
   };
 
   const kultosPorDia = cultos.reduce((acc, culto) => {
@@ -366,6 +395,7 @@ export default function AdminAgendaPage() {
                   <label>Dia da Semana</label>
                   <div className={`${styles.customSelect} customSelect`}>
                     <button 
+                      type="button"
                       className={styles.selectBtn}
                       onClick={(e) => { e.stopPropagation(); setShowDayDropdown(!showDayDropdown); }}
                     >
@@ -376,6 +406,7 @@ export default function AdminAgendaPage() {
                         {DIAS_SEMANA.map((d) => (
                           <button
                             key={d}
+                            type="button"
                             className={styles.selectItem}
                             onClick={() => { setDay(d); setShowDayDropdown(false); }}
                           >
@@ -403,6 +434,7 @@ export default function AdminAgendaPage() {
                 <label>Sede</label>
                 <div className={`${styles.customSelect} customSelect`}>
                   <button 
+                    type="button"
                     className={styles.selectBtn}
                     onClick={(e) => { e.stopPropagation(); setShowSedeDropdown(!showSedeDropdown); }}
                   >
@@ -411,6 +443,7 @@ export default function AdminAgendaPage() {
                   {showSedeDropdown && (
                     <div className={styles.selectMenu}>
                       <button
+                        type="button"
                         className={styles.selectItem}
                         onClick={() => { setSede("Geral"); setShowSedeDropdown(false); }}
                       >
@@ -419,6 +452,7 @@ export default function AdminAgendaPage() {
                       {sedes.map((s) => (
                         <button
                           key={s.id}
+                          type="button"
                           className={styles.selectItem}
                           onClick={() => { setSede(s.nome); setShowSedeDropdown(false); }}
                         >
@@ -464,6 +498,17 @@ export default function AdminAgendaPage() {
           </div>
         </div>
       )}
+
+      {/* ConfirmModal para exclusões e ações críticas */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }
