@@ -37,6 +37,11 @@ export const metadata: Metadata = {
     description: "App para organizar cultos e destacar avisos para a comunidade da Igreja.",
     images: ["/ipic-conecta-logo.png"],
   },
+  icons: {
+    icon: "/ipic-conecta-logo.png",
+    shortcut: "/ipic-conecta-logo.png",
+    apple: "/ipic-conecta-logo.png",
+  },
 };
 
 export const viewport: Viewport = {
