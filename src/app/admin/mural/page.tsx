@@ -80,6 +80,10 @@ export default function AdminMuralPage() {
               setIsAdmin(false);
               toast.error("Você não tem permissão para acessar esta área.");
             }
+          } else {
+             // Caso o documento não exista (raro), mas o auth sim
+             console.warn("Perfil não encontrado no Firestore para o UID:", user.uid);
+             setIsAdmin(false);
           }
         } catch (error) {
           console.error("Erro ao verificar cargo:", error);
@@ -87,31 +91,23 @@ export default function AdminMuralPage() {
         }
       } else {
         setIsAdmin(false);
+        // Opcional: Redirecionar para login se necessário
       }
-      setAuthLoading(false);
+      // Damos um tempo extra de meio segundo apenas como delay visual confortável
+      // para garantir que os estados da Next.js se estabilizem
+      setTimeout(() => setAuthLoading(false), 500);
     });
 
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. Click outside para dropdowns
+  // 2. Listeners de Dados (Só começam após ser confirmado como Admin)
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.customSelect')) {
-        setShowSedeDropdown(false);
-        setShowCategoryDropdown(false);
-      }
-    };
+    // IMPORTANTE: Só iniciamos qualquer carregamento de dados se formos ADMIN
+    // Isso evita o erro de "permissão negada" logo no início do carregamento
+    if (!db || !isAdmin || authLoading) return;
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
-  // 3. Listeners de Dados (Só começam após ser confirmado como Admin)
-  useEffect(() => {
-    if (!db || !isAdmin) return;
-
+    // A partir daqui, sabemos que o usuário é admin
     const qSedes = query(collection(db, "sedes"));
     const unsubSedes = onSnapshot(qSedes, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
@@ -121,8 +117,8 @@ export default function AdminMuralPage() {
       setSedes(docs.filter((s: Sede) => s.active));
     });
 
-    const q = query(collection(db, "avisos"), orderBy("createdAt", "desc"));
-    const unsubscribeAvisos = onSnapshot(q, (snapshot) => {
+    const qAvisos = query(collection(db, "avisos"), orderBy("createdAt", "desc"));
+    const unsubAvisos = onSnapshot(qAvisos, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -130,10 +126,7 @@ export default function AdminMuralPage() {
       setAvisos(docs);
       setLoading(false);
     }, (error) => {
-      console.error("Erro no listener de avisos:", error);
-      if (error.code === 'permission-denied') {
-        toast.error("Erro de permissão ao carregar avisos.");
-      }
+      console.warn("Listener de Avisos silenciado (aguardando login):", error);
     });
 
     const qModelos = query(collection(db, "modelos_mural"), orderBy("createdAt", "desc"));
@@ -144,16 +137,28 @@ export default function AdminMuralPage() {
       })) as ModeloMural[];
       setModelos(docs);
     }, (error) => {
-      console.error("Erro no listener de modelos:", error);
-      // Aqui tratamos o erro de permissão graciosamente
+      console.warn("Listener de Modelos silenciado (aguardando login):", error);
     });
 
     return () => {
       unsubSedes();
-      unsubscribeAvisos();
+      unsubAvisos();
       unsubModelos();
     };
-  }, [isAdmin]);
+  }, [isAdmin, authLoading]);
+
+  // Click outside para dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.customSelect')) {
+        setShowSedeDropdown(false);
+        setShowCategoryDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -183,7 +188,7 @@ export default function AdminMuralPage() {
   const handleSaveModelo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      toast.error("Ação não permitida para o seu usuário.");
+      toast.error("Somente administradores podem salvar modelos.");
       return;
     }
     if (!modeloName || !modeloFile) {
@@ -202,7 +207,7 @@ export default function AdminMuralPage() {
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Erro no upload do modelo");
+      if (!response.ok) throw new Error("Erro no upload do arquivo.");
       
       const data = await response.json();
 
@@ -216,14 +221,13 @@ export default function AdminMuralPage() {
       setModeloName("");
       setModeloFile(null);
       setModeloPreview(null);
-      toast.success("Modelo adicionado com sucesso!");
+      toast.success("Modelo salvo com sucesso!");
     } catch (error: any) {
-      console.error("Erro ao salvar modelo:", error);
-      if (error.code === 'permission-denied') {
-        toast.error("Você não tem permissão para salvar modelos.");
-      } else {
-        toast.error("Erro ao salvar modelo.");
-      }
+      console.error("Falha ao salvar modelo:", error);
+      const msg = error.code === 'permission-denied' 
+        ? "Você não tem permissão para salvar no banco." 
+        : "Erro ao salvar modelo. Tente novamente.";
+      toast.error(msg);
     } finally {
       setSavingModelo(false);
     }
@@ -233,9 +237,8 @@ export default function AdminMuralPage() {
     setConfirmModal({
       isOpen: true,
       title: "Excluir Modelo",
-      message: `Tem certeza que deseja excluir o modelo "${modelo.name}"? Isso não afetará avisos já criados com ele.`,
+      message: `Deseja apagar "${modelo.name}"? Isso não removerá os avisos que já usam essa imagem.`,
       isDestructive: true,
-      confirmText: "Excluir Modelo",
       onConfirm: async () => {
         try {
           if (modelo.storagePath) {
@@ -244,10 +247,9 @@ export default function AdminMuralPage() {
             });
           }
           await deleteDoc(doc(db, "modelos_mural", modelo.id));
-          toast.success("Modelo excluído!");
+          toast.success("Modelo removido.");
         } catch (error) {
-          console.error("Erro ao excluir modelo:", error);
-          toast.error("Erro ao excluir modelo.");
+          toast.error("Erro ao remover modelo.");
         }
       }
     });
@@ -258,7 +260,7 @@ export default function AdminMuralPage() {
     if (!isAdmin) return;
     
     if (!title || !excerpt || (!imageFile && !selectedModelo)) {
-      toast.error("Por favor, preencha todos os campos e selecione uma imagem ou modelo.");
+      toast.error("Faltam informações obrigatórias para publicar.");
       return;
     }
 
@@ -269,7 +271,6 @@ export default function AdminMuralPage() {
       
       if (selectedModelo) {
         imageUrl = selectedModelo.imageUrl;
-        storagePath = "";
       } else if (imageFile) {
         const formData = new FormData();
         formData.append("file", imageFile);
@@ -280,10 +281,7 @@ export default function AdminMuralPage() {
           body: formData,
         });
 
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
-          throw new Error(errorData.error || "Falha ao fazer upload da imagem");
-        }
+        if (!uploadResponse.ok) throw new Error("Falha ao fazer upload da imagem");
 
         const uploadData = await uploadResponse.json();
         imageUrl = uploadData.url;
@@ -305,11 +303,7 @@ export default function AdminMuralPage() {
       toast.success("Aviso publicado com sucesso!");
     } catch (error: any) {
       console.error("Erro ao salvar aviso:", error);
-      if (error.code === 'permission-denied') {
-        toast.error("Erro: Permissão negada pelo banco de dados.");
-      } else {
-        toast.error("Erro ao salvar o aviso.");
-      }
+      toast.error("Erro ao gravar o aviso no banco de dados.");
     } finally {
       setSaving(false);
     }
@@ -319,20 +313,19 @@ export default function AdminMuralPage() {
     setConfirmModal({
       isOpen: true,
       title: "Confirmar Exclusão",
-      message: `Tem certeza que deseja excluir o aviso "${aviso.title}"? Esta ação não pode ser desfeita.`,
+      message: `Apagar o aviso "${aviso.title}"?`,
       isDestructive: true,
-      confirmText: "Excluir Aviso",
+      confirmText: "Deletar Agora",
       onConfirm: async () => {
         try {
           if (aviso.storagePath) {
             await fetch(`/api/upload?path=${encodeURIComponent(aviso.storagePath)}`, {
               method: "DELETE",
-            }).catch(err => console.warn("Erro ao deletar arquivo do storage:", err));
+            });
           }
           await deleteDoc(doc(db, "avisos", aviso.id));
-          toast.success("Aviso excluído!");
+          toast.success("Aviso removido com sucesso.");
         } catch (error) {
-          console.error("Erro ao excluir aviso:", error);
           toast.error("Erro ao excluir aviso.");
         }
       }
@@ -349,27 +342,27 @@ export default function AdminMuralPage() {
     setSelectedModelo(null);
   };
 
-  // Renderização de Carregamento de Autenticação
+  // Carregamento Inicial (Spinner Sugerido)
   if (authLoading) {
     return (
-      <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+      <div className={styles.container} style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <Loader2 className="animate-spin" size={48} color="var(--primary)" />
-          <p style={{ marginTop: '1rem', color: 'var(--text-muted)', fontWeight: '600' }}>Validando suas permissões...</p>
+          <Loader2 className="animate-spin" size={56} color="var(--primary)" strokeWidth={3} />
+          <p style={{ marginTop: '1.5rem', fontWeight: '800', color: 'var(--text-muted)', fontSize: '1.1rem' }}>Sincronizando Permissões...</p>
         </div>
       </div>
     );
   }
 
-  // Renderização de Acesso Negado
+  // Acesso Negado (Se não for Admin)
   if (!isAdmin) {
     return (
-      <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <div style={{ textAlign: 'center', background: 'white', padding: '3rem', borderRadius: '24px', boxShadow: 'var(--shadow-lg)', maxWidth: '400px' }}>
-          <Lock size={64} color="#ef4444" style={{ marginBottom: '1.5rem', margin: '0 auto' }} />
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem' }}>Acesso Restrito</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Você não tem permissão para gerenciar o Mural. Se você for um administrador, entre em contato com o suporte.</p>
-          <button onClick={() => window.location.href = '/'} style={{ background: 'var(--primary)', color: 'white', padding: '0.75rem 2rem', borderRadius: '12px', border: 'none', fontWeight: '700', cursor: 'pointer' }}>Voltar para a Home</button>
+      <div className={styles.container} style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', background: 'white', padding: '3.5rem', borderRadius: '32px', boxShadow: 'var(--shadow-lg)' }}>
+          <Lock size={64} color="#ef4444" style={{ margin: '0 auto 1.5rem' }} />
+          <h2 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '1rem' }}>Área Restrita</h2>
+          <p style={{ color: 'var(--text-muted)' }}>Você não possui cargo de administrador no banco de dados.</p>
+          <button onClick={() => window.location.href = '/'} style={{ marginTop: '2rem', background: 'var(--primary)', color: 'white', padding: '0.75rem 2.5rem', borderRadius: '14px', border: 'none', fontWeight: '800', cursor: 'pointer' }}>Voltar ao Início</button>
         </div>
       </div>
     );
@@ -382,7 +375,7 @@ export default function AdminMuralPage() {
           <h1 className={styles.title}>Mural de Avisos</h1>
           <p className={styles.subtitle}>Gerencie o conteúdo que aparece na home do app.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '1rem' }}>
           <button 
             className={styles.newBtn} 
             onClick={() => setIsModelosModalOpen(true)}
@@ -400,12 +393,12 @@ export default function AdminMuralPage() {
         {loading ? (
           <div className={styles.emptyState}>
             <Loader2 className="animate-spin" size={32} />
-            <p>Carregando avisos...</p>
+            <p>Buscando informações do Mural...</p>
           </div>
         ) : avisos.length === 0 ? (
           <div className={styles.emptyState}>
             <ImageIcon size={48} strokeWidth={1} />
-            <p>Nenhum aviso publicado ainda.</p>
+            <p>Nenhum aviso no Mural no momento.</p>
           </div>
         ) : (
           <table className={styles.table}>
@@ -422,7 +415,7 @@ export default function AdminMuralPage() {
                 <tr key={aviso.id}>
                   <td className={styles.titleCell}>
                     {aviso.imageUrl ? (
-                      <img src={aviso.imageUrl} alt={aviso.title} className={styles.fileIcon} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
+                      <img src={aviso.imageUrl} alt={aviso.title} className={styles.fileIcon} style={{ width: 42, height: 42, borderRadius: 10, objectFit: 'cover' }} />
                     ) : (
                       <ImageIcon size={16} className={styles.fileIcon} />
                     )}
@@ -448,32 +441,32 @@ export default function AdminMuralPage() {
         )}
       </div>
 
-      {/* Modal de Gerenciar Modelos */}
+      {/* Modal de Modelos */}
       {isModelosModalOpen && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalContent} style={{ maxWidth: '600px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 className={styles.modalTitle}>Gerenciar Modelos (Templates)</h2>
+          <div className={styles.modalContent} style={{ maxWidth: '650px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 className={styles.modalTitle}>Templates de Mural</h2>
               <button onClick={() => setIsModelosModalOpen(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
             </div>
 
-            <form onSubmit={handleSaveModelo} style={{ marginBottom: '2rem', padding: '1rem', background: '#f9fafb', borderRadius: '16px' }}>
-              <h3 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '1rem' }}>Adicionar Novo Modelo</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'end' }}>
+            <form onSubmit={handleSaveModelo} style={{ marginBottom: '2rem', padding: '1.25rem', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>Adicionar Novo Template</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem', alignItems: 'end' }}>
                 <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                  <label>Nome do Modelo</label>
+                  <label>Nome do Template</label>
                   <input 
                     type="text" 
                     className={styles.input} 
-                    placeholder="Ex: Oração da Noite"
+                    placeholder="Ex: Culto de Domingo"
                     value={modeloName}
                     onChange={(e) => setModeloName(e.target.value)}
                   />
                 </div>
                 <div className={styles.formGroup} style={{ marginBottom: 0 }}>
                   <input type="file" id="modeloUpload" hidden accept="image/*" onChange={handleModeloImageChange} />
-                  <label htmlFor="modeloUpload" className={styles.imageUpload} style={{ height: '42px', minHeight: 'auto', padding: '0 1rem' }}>
-                    {modeloPreview ? "Imagem Selecionada" : "Selecionar Imagem"}
+                  <label htmlFor="modeloUpload" className={styles.imageUpload} style={{ height: '44px', minHeight: 'auto', padding: '0 1rem' }}>
+                    {modeloPreview ? "Foto Carregada ✓" : "Escolher Imagem"}
                   </label>
                 </div>
               </div>
@@ -483,26 +476,24 @@ export default function AdminMuralPage() {
                 style={{ width: '100%', marginTop: '1rem' }}
                 disabled={savingModelo}
               >
-                {savingModelo ? "Enviando..." : "Salvar Modelo"}
+                {savingModelo ? "Salvando..." : "Salvar no Sistema"}
               </button>
             </form>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1rem', maxHeight: '400px', overflowY: 'auto', padding: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1.25rem', maxHeight: '420px', overflowY: 'auto', padding: '0.5rem' }}>
               {modelos.length === 0 ? (
-                <p style={{ textAlign: 'center', gridColumn: '1/-1', padding: '2rem', color: 'var(--text-muted)' }}>
-                  Nenhum modelo cadastrado.
-                </p>
+                <p style={{ textAlign: 'center', gridColumn: '1/-1', padding: '3rem', color: 'var(--text-muted)' }}>Você ainda não cadastrou nenhum template.</p>
               ) : (
                 modelos.map((m) => (
-                  <div key={m.id} style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                  <div key={m.id} style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
                     <img src={m.imageUrl} alt={m.name} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover' }} />
                     <div style={{ padding: '0.5rem', background: 'white' }}>
-                      <p style={{ fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</p>
+                      <p style={{ fontSize: '0.75rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</p>
                       <button 
                         onClick={() => handleDeleteModelo(m)}
-                        style={{ position: 'absolute', top: 5, right: 5, background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        style={{ position: 'absolute', top: 6, right: 6, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.9 }}
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={10} />
                       </button>
                     </div>
                   </div>
@@ -517,18 +508,18 @@ export default function AdminMuralPage() {
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 className={styles.modalTitle}>Novo Aviso</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 className={styles.modalTitle}>Publicar no Mural</h2>
               <button onClick={() => setIsModalOpen(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleSave} className={styles.form}>
               <div className={styles.formGroup}>
-                <label>Título do Aviso</label>
+                <label>Título Principal</label>
                 <input 
                   type="text" 
                   className={styles.input} 
-                  placeholder="Ex: Congresso de Mulheres"
+                  placeholder="Nome do evento ou aviso..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
@@ -536,19 +527,19 @@ export default function AdminMuralPage() {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Resumo / Descrição curta</label>
+                <label>Descrição Curta</label>
                 <textarea 
                   className={styles.textarea} 
-                  placeholder="Breve descrição do aviso..."
+                  placeholder="Resumo do que se trata..."
                   value={excerpt}
                   onChange={(e) => setExcerpt(e.target.value)}
                   required
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
                 <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                  <label>Sede</label>
+                  <label>Sede Responsável</label>
                   <div className={`${styles.customSelect} customSelect`}>
                     <button type="button" className={styles.selectBtn} onClick={() => setShowSedeDropdown(!showSedeDropdown)}>{sede} <ChevronDown size={16} /></button>
                     {showSedeDropdown && (
@@ -562,7 +553,7 @@ export default function AdminMuralPage() {
                   </div>
                 </div>
                 <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                  <label>Categoria</label>
+                  <label>Tipo de Aviso</label>
                   <div className={`${styles.customSelect} customSelect`}>
                     <button type="button" className={styles.selectBtn} onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}>{category} <ChevronDown size={16} /></button>
                     {showCategoryDropdown && (
@@ -578,8 +569,8 @@ export default function AdminMuralPage() {
 
               <div className={styles.formGroup}>
                 <label style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  Imagem de Capa
-                  {modelos.length > 0 && <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '700' }}>ESCOLHA UM MODELO ABAIXO OU FAÇA UPLOAD</span>}
+                  Arte de Capa
+                  {modelos.length > 0 && <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '800' }}>ESCOLHA UM TEMPLATE OU SUBIR ARQUIVO</span>}
                 </label>
 
                 {modelos.length > 0 && (
@@ -589,18 +580,19 @@ export default function AdminMuralPage() {
                         key={m.id} 
                         onClick={() => { setSelectedModelo(m); setImageFile(null); setImagePreview(null); }}
                         style={{ 
-                          flex: '0 0 100px', cursor: 'pointer', position: 'relative', borderRadius: '8px', overflow: 'hidden', 
+                          flex: '0 0 100px', cursor: 'pointer', position: 'relative', borderRadius: '10px', overflow: 'hidden', 
                           border: selectedModelo?.id === m.id ? '2px solid var(--primary)' : '1px solid var(--border)',
-                          transform: selectedModelo?.id === m.id ? 'scale(1.05)' : 'scale(1)', transition: 'all 0.2s'
+                          transform: selectedModelo?.id === m.id ? 'scale(1.05)' : 'scale(1)', transition: 'all 0.2s',
+                          boxShadow: selectedModelo?.id === m.id ? 'var(--shadow-md)' : 'none'
                         }}
                       >
                         <img src={m.imageUrl} alt={m.name} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover' }} />
                         {selectedModelo?.id === m.id && (
                           <div style={{ position: 'absolute', inset: 0, background: 'rgba(56, 189, 248, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Check color="white" size={24} />
+                            <Check color="white" size={24} strokeWidth={3} />
                           </div>
                         )}
-                        <span style={{ fontSize: '10px', padding: '2px 4px', display: 'block', textAlign: 'center', background: 'white' }}>{m.name}</span>
+                        <span style={{ fontSize: '10px', padding: '3px 4px', display: 'block', textAlign: 'center', background: 'white', fontWeight: '800' }}>{m.name}</span>
                       </div>
                     ))}
                   </div>
@@ -609,11 +601,11 @@ export default function AdminMuralPage() {
                 <input type="file" id="imageUpload" hidden accept="image/*" onChange={handleImageChange} />
                 <label htmlFor="imageUpload" className={styles.imageUpload} style={{ borderStyle: selectedModelo ? 'solid' : 'dashed', borderColor: selectedModelo ? 'var(--primary)' : 'var(--border)' }}>
                   {selectedModelo ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
-                      <img src={selectedModelo.imageUrl} alt="Selected" className={styles.preview} style={{ width: 80, height: 45, borderRadius: 4 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', width: '100%' }}>
+                      <img src={selectedModelo.imageUrl} alt="Selected" className={styles.preview} style={{ width: 84, height: 47, borderRadius: 6, objectFit: 'cover' }} />
                       <div style={{ textAlign: 'left' }}>
-                        <p style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--primary)' }}>Modelo: {selectedModelo.name}</p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clique para trocar por imagem manual</p>
+                        <p style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--primary)' }}>Template: {selectedModelo.name}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clique aqui se desejar subir outra imagem</p>
                       </div>
                     </div>
                   ) : imagePreview ? (
@@ -621,16 +613,16 @@ export default function AdminMuralPage() {
                   ) : (
                     <>
                       <Upload size={24} />
-                      <span>Selecione uma imagem ou use um modelo acima</span>
+                      <span>Selecione uma imagem ou use um template acima</span>
                     </>
                   )}
                 </label>
               </div>
 
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setIsModalOpen(false)} disabled={saving}>Cancelar</button>
+                <button type="button" className={styles.cancelBtn} onClick={() => setIsModalOpen(false)} disabled={saving}>Descartar</button>
                 <button type="submit" className={styles.saveBtn} disabled={saving}>
-                  {saving ? "Publicar pelo modelo..." : "Publicar Aviso"}
+                  {saving ? "Publicando..." : "Publicar Agora"}
                 </button>
               </div>
             </form>
@@ -638,7 +630,7 @@ export default function AdminMuralPage() {
         </div>
       )}
 
-      {/* ConfirmModal para exclusões e ações críticas */}
+      {/* ConfirmModal */}
       <ConfirmModal 
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
