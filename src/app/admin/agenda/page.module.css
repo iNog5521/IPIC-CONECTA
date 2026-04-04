@@ -1,114 +1,126 @@
 .container {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 2rem;
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--primary);
+  margin-bottom: 0.5rem;
 }
 
 .subtitle {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .newBtn {
   background-color: var(--primary);
   color: white;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 10px rgba(27, 59, 54, 0.2);
   border: none;
   cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px var(--primary-faded);
+}
+
+.newBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px var(--primary-faded);
 }
 
 .tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
+  margin-bottom: 2rem;
   border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
 }
 
 .tab {
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: transparent;
   border: none;
-  font-weight: 600;
-  color: var(--text-muted);
+  background: none;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-
-.tab:hover {
-  color: var(--primary);
+  transition: all 0.2s;
 }
 
 .activeTab {
+  background: var(--primary-faded);
   color: var(--primary);
-  border-bottom-color: var(--primary);
 }
 
 .cultosGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
 }
 
 .dayGroup {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .dayTitle {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 1rem;
+  color: var(--text-primary);
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--primary-faded);
+  border-bottom: 2px solid var(--primary-light);
+  margin-bottom: 0.5rem;
 }
 
 .cultoCard {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  background: white;
+  border-radius: 16px;
+  padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-  background: #fafafa;
+  display: flex;
+  gap: 1rem;
+  transition: all 0.2s;
 }
 
-.cultoCard:last-child {
-  margin-bottom: 0;
+.cultoCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  border-color: var(--primary-light);
 }
 
 .cultoTime {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  color: var(--primary);
+  font-size: 0.85rem;
   font-weight: 700;
-  font-size: 0.9rem;
-  min-width: 60px;
+  color: var(--primary);
+  background: var(--primary-faded);
+  padding: 0.75rem;
+  border-radius: 12px;
+  height: fit-content;
 }
 
 .cultoInfo {
@@ -116,16 +128,20 @@
 }
 
 .cultoInfo h4 {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
 
 .cultoInfo p {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .cultoMeta {
@@ -143,6 +159,7 @@
 
 .cultoActions {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
@@ -318,41 +335,6 @@
   border-color: var(--primary);
 }
 
-.selectMenu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 0.5rem;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  z-index: 100;
-  overflow: hidden;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.selectItem {
-  display: block;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: none;
-  background: none;
-  text-align: left;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.selectItem:hover {
-  background: var(--primary-faded);
-  color: var(--primary);
-}
-
 .modalActions {
   display: flex;
   gap: 1rem;
@@ -403,4 +385,99 @@
     display: block;
     overflow-x: auto;
   }
+}
+
+/* PICKER OVERLAY (O NOVO PADRAO SOLICITADO) */
+.pickerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1100; /* Acima do modalOverlay (1000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.pickerContent {
+  background: white;
+  width: 100%;
+  max-width: 320px;
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pickerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
+.pickerHeader h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pickerClose {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.pickerList {
+  max-height: 40vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.5rem 0;
+}
+
+.pickerItem {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  background: none;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pickerItem:hover {
+  background: var(--surface);
+  color: var(--primary);
+}
+
+.pickerItemActive {
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }

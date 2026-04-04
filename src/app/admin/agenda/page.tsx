@@ -38,8 +38,10 @@ export default function AdminAgendaPage() {
   const [time, setTime] = useState("09:00");
   const [sede, setSede] = useState("Geral");
   const [active, setActive] = useState(true);
-  const [showDayDropdown, setShowDayDropdown] = useState(false);
-  const [showSedeDropdown, setShowSedeDropdown] = useState(false);
+  
+  // Novos estados para os seletores centralizados (Overlays)
+  const [showDayPicker, setShowDayPicker] = useState(false);
+  const [showSedePicker, setShowSedePicker] = useState(false);
 
   // Modal de confirmação customizado
   const [confirmModal, setConfirmModal] = useState<{
@@ -55,18 +57,6 @@ export default function AdminAgendaPage() {
     message: "",
     onConfirm: () => {},
   });
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.customSelect')) {
-        setShowDayDropdown(false);
-        setShowSedeDropdown(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     const qSedes = query(collection(db, "sedes"));
@@ -135,6 +125,8 @@ export default function AdminAgendaPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingCulto(null);
+    setShowDayPicker(false);
+    setShowSedePicker(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -355,7 +347,7 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal Principal (Editar/Criar Culto) */}
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
@@ -393,29 +385,13 @@ export default function AdminAgendaPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className={styles.formGroup}>
                   <label>Dia da Semana</label>
-                  <div className={`${styles.customSelect} customSelect`}>
-                    <button 
-                      type="button"
-                      className={styles.selectBtn}
-                      onClick={(e) => { e.stopPropagation(); setShowDayDropdown(!showDayDropdown); }}
-                    >
-                      {day} <ChevronDown size={16} />
-                    </button>
-                    {showDayDropdown && (
-                      <div className={styles.selectMenu}>
-                        {DIAS_SEMANA.map((d) => (
-                          <button
-                            key={d}
-                            type="button"
-                            className={styles.selectItem}
-                            onClick={() => { setDay(d); setShowDayDropdown(false); }}
-                          >
-                            {d}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <button 
+                    type="button"
+                    className={styles.selectBtn}
+                    onClick={() => setShowDayPicker(true)}
+                  >
+                    {day} <ChevronDown size={16} />
+                  </button>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -432,36 +408,13 @@ export default function AdminAgendaPage() {
 
               <div className={styles.formGroup}>
                 <label>Sede</label>
-                <div className={`${styles.customSelect} customSelect`}>
-                  <button 
-                    type="button"
-                    className={styles.selectBtn}
-                    onClick={(e) => { e.stopPropagation(); setShowSedeDropdown(!showSedeDropdown); }}
-                  >
-                    {sede} <ChevronDown size={16} />
-                  </button>
-                  {showSedeDropdown && (
-                    <div className={styles.selectMenu}>
-                      <button
-                        type="button"
-                        className={styles.selectItem}
-                        onClick={() => { setSede("Geral"); setShowSedeDropdown(false); }}
-                      >
-                        Geral (Todas)
-                      </button>
-                      {sedes.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          className={styles.selectItem}
-                          onClick={() => { setSede(s.nome); setShowSedeDropdown(false); }}
-                        >
-                          {s.nome}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <button 
+                  type="button"
+                  className={styles.selectBtn}
+                  onClick={() => setShowSedePicker(true)}
+                >
+                  {sede} <ChevronDown size={16} />
+                </button>
               </div>
 
               {editingCulto && (
@@ -495,6 +448,61 @@ export default function AdminAgendaPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SELETOR DE DIA DA SEMANA (OVERLAY CENTRALIZADO) */}
+      {showDayPicker && (
+        <div className={styles.pickerOverlay} onClick={() => setShowDayPicker(false)}>
+          <div className={styles.pickerContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.pickerHeader}>
+              <h3>Selecionar Dia</h3>
+              <button className={styles.pickerClose} onClick={() => setShowDayPicker(false)}><X size={20} /></button>
+            </div>
+            <div className={styles.pickerList}>
+              {DIAS_SEMANA.map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  className={`${styles.pickerItem} ${day === d ? styles.pickerItemActive : ""}`}
+                  onClick={() => { setDay(d); setShowDayPicker(false); }}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SELETOR DE SEDE (OVERLAY CENTRALIZADO) */}
+      {showSedePicker && (
+        <div className={styles.pickerOverlay} onClick={() => setShowSedePicker(false)}>
+          <div className={styles.pickerContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.pickerHeader}>
+              <h3>Selecionar Sede</h3>
+              <button className={styles.pickerClose} onClick={() => setShowSedePicker(false)}><X size={20} /></button>
+            </div>
+            <div className={styles.pickerList}>
+              <button
+                type="button"
+                className={`${styles.pickerItem} ${sede === "Geral" ? styles.pickerItemActive : ""}`}
+                onClick={() => { setSede("Geral"); setShowSedePicker(false); }}
+              >
+                Geral (Todas)
+              </button>
+              {sedes.map(s => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`${styles.pickerItem} ${sede === s.nome ? styles.pickerItemActive : ""}`}
+                  onClick={() => { setSede(s.nome); setShowSedePicker(false); }}
+                >
+                  {s.nome}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
