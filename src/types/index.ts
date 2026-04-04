@@ -44,6 +44,7 @@ export interface ModeloMural {
 export interface Confirmacao {
   id: string;
   cultoId: string;
+  cultoName?: string;
   cultoTime?: string;
   cultoDay?: string;
   userId: string;

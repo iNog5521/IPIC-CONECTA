@@ -155,11 +155,12 @@ export default function CultosPage() {
       return;
     }
 
-    if (isConfirmed(culto.name)) return;
+    if (isConfirmed(culto.id)) return;
 
     try {
       await addDoc(collection(db, "confirmacoes"), {
-        cultoId: culto.name,
+        cultoId: culto.id,
+        cultoName: culto.name,
         cultoTime: culto.time,
         cultoDay: culto.day,
         userId: user.uid,
@@ -309,19 +310,19 @@ export default function CultosPage() {
                       <MapPin size={12} />
                       {culto.sede === "Geral" ? "Todas as Sedes" : culto.sede}
                     </p>
-                    {getConfirmadosCount(culto.name) > 0 && (
+                    {getConfirmadosCount(culto.id) > 0 && (
                       <p style={{ fontSize: '11px', color: '#22c55e', marginTop: '4.5rem' }}>
-                         {getConfirmadosCount(culto.name)} {getConfirmadosCount(culto.name) === 1 ? "pessoa confirmada" : "pessoas confirmadas"}
+                         {getConfirmadosCount(culto.id)} {getConfirmadosCount(culto.id) === 1 ? "pessoa confirmada" : "pessoas confirmadas"}
                       </p>
                     )}
                   </div>
                   <div className={styles.cultoActions}>
                     {user && !loadingConfirmacoes && (
-                      isConfirmed(culto.name) ? (
+                      isConfirmed(culto.id) ? (
                         <button 
                           className={styles.confirmBtn}
                           style={{ background: '#ef4444', color: 'white' }}
-                          onClick={() => handleCancel(culto.name)}
+                          onClick={() => handleCancel(culto.id)}
                         >
                           Cancelar
                         </button>
@@ -378,13 +379,14 @@ export default function CultosPage() {
               <button onClick={() => setShowConfirmados(false)}><X size={20} /></button>
             </div>
             {Object.entries(todosConfirmados.reduce((acc, c) => {
-              if (!acc[c.cultoId]) acc[c.cultoId] = [];
-              acc[c.cultoId].push(c);
+              const groupName = c.cultoName || c.cultoId;
+              if (!acc[groupName]) acc[groupName] = [];
+              acc[groupName].push(c);
               return acc;
-            }, {} as Record<string, Confirmacao[]>)).map(([cultoId, confirmados]) => (
-              <div key={cultoId} style={{ marginBottom: '1.5rem' }}>
+            }, {} as Record<string, Confirmacao[]>)).map(([groupName, confirmados]) => (
+              <div key={groupName} style={{ marginBottom: '1.5rem' }}>
                 <h3 style={{ fontSize: '14px', color: '#6366f1', marginBottom: '8px', fontWeight: '700' }}>
-                  {cultoId} ({confirmados.length})
+                  {groupName} ({confirmados.length})
                 </h3>
                 {confirmados.map((c, i) => (
                   <div key={i} style={{ padding: '8px', borderBottom: '1px solid #eee', fontSize: '13px', color: 'var(--text-primary)' }}>
@@ -424,11 +426,11 @@ export default function CultosPage() {
 
             {user && !loadingConfirmacoes && (
               <div style={{ marginTop: 'auto' }}>
-                {isConfirmed(selectedCulto.name) ? (
+                {isConfirmed(selectedCulto.id) ? (
                   <button 
                     className={styles.confirmBtn}
                     style={{ width: '100%', background: '#ef4444', color: 'white', padding: '1rem' }}
-                    onClick={() => { handleCancel(selectedCulto.name); setSelectedCulto(null); }}
+                    onClick={() => { handleCancel(selectedCulto.id); setSelectedCulto(null); }}
                   >
                     Cancelar Presença
                   </button>
