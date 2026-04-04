@@ -59,6 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (unsubProfile) {
         unsubProfile();
+        unsubProfile = undefined;
       }
       
       if (fbUser) {
@@ -66,6 +67,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
           document.cookie = "admin_session=true; path=/; max-age=86400";
         }
+
+        // Coloca em loading enquanto busca o perfil no Firestore.
+        // Sem isso, a página renderiza com profile=null antes do onSnapshot chegar,
+        // causando campos em branco mesmo com dados no Firestore.
+        setLoading(true);
 
         try {
           const docRef = doc(db, "users", fbUser.uid);
