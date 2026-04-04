@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { toast } from "sonner";
 import { Sede } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
 
 
 
@@ -30,6 +31,21 @@ export default function AdminSedesPage() {
   const [nome, setNome] = useState("");
   const [endereco, setEndereco] = useState("");
   const [active, setActive] = useState(true);
+
+  // Modal de confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const q = query(collection(db, "sedes"), orderBy("nome", "asc"));
@@ -102,16 +118,23 @@ export default function AdminSedesPage() {
     }
   };
 
-  const handleDelete = async (sede: Sede) => {
-    if (!confirm(`Tem certeza que deseja excluir "${sede.nome}"?`)) return;
-
-    try {
-      await deleteDoc(doc(db, "sedes", sede.id));
-      toast.success("Sede excluída.");
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
-      toast.error("Erro ao excluir sede.");
-    }
+  const handleDelete = (sede: Sede) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Confirmar Exclusão",
+      message: `Tem certeza que deseja excluir a sede "${sede.nome}"? Esta ação não pode ser desfeita.`,
+      isDestructive: true,
+      confirmText: "Excluir Sede",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "sedes", sede.id));
+          toast.success("Sede excluída.");
+        } catch (error) {
+          console.error("Erro ao excluir:", error);
+          toast.error("Erro ao excluir sede.");
+        }
+      }
+    });
   };
 
   const toggleActive = async (sede: Sede) => {
@@ -277,6 +300,17 @@ export default function AdminSedesPage() {
           </div>
         </div>
       )}
+
+      {/* ConfirmModal para exclusões e ações críticas */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }

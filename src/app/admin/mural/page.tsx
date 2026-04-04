@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { toast } from "sonner";
 import { Sede, Aviso } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
 
 
 
@@ -36,6 +37,21 @@ export default function AdminMuralPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showSedeDropdown, setShowSedeDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Modal de confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (!db) return;
@@ -150,28 +166,35 @@ export default function AdminMuralPage() {
     }
   };
 
-  const handleDelete = async (aviso: Aviso) => {
-    if (!confirm("Tem certeza que deseja excluir este aviso?")) return;
+  const handleDelete = (aviso: Aviso) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Confirmar Exclusão",
+      message: `Tem certeza que deseja excluir o aviso "${aviso.title}"? Esta ação não pode ser desfeita.`,
+      isDestructive: true,
+      confirmText: "Excluir Aviso",
+      onConfirm: async () => {
+        try {
+          console.log("Iniciando exclusão do aviso:", aviso.id);
+          
+          // 1. Delete from Storage via API
+          if (aviso.storagePath) {
+            console.log("Excluindo arquivo do Storage:", aviso.storagePath);
+            await fetch(`/api/upload?path=${encodeURIComponent(aviso.storagePath)}`, {
+              method: "DELETE",
+            }).catch(err => console.warn("Erro ao deletar arquivo do storage:", err));
+          }
 
-    try {
-      console.log("Iniciando exclusão do aviso:", aviso.id);
-      
-      // 1. Delete from Storage via API
-      if (aviso.storagePath) {
-        console.log("Excluindo arquivo do Storage:", aviso.storagePath);
-        await fetch(`/api/upload?path=${encodeURIComponent(aviso.storagePath)}`, {
-          method: "DELETE",
-        }).catch(err => console.warn("Erro ao deletar arquivo do storage:", err));
+          // 2. Delete from Firestore
+          console.log("Excluindo documento do Firestore:", aviso.id);
+          await deleteDoc(doc(db, "avisos", aviso.id));
+          toast.success("Aviso excluído!");
+        } catch (error) {
+          console.error("Erro ao excluir aviso:", error);
+          toast.error("Erro ao excluir aviso.");
+        }
       }
-
-      // 2. Delete from Firestore
-      console.log("Excluindo documento do Firestore:", aviso.id);
-      await deleteDoc(doc(db, "avisos", aviso.id));
-      toast.success("Aviso excluído!");
-    } catch (error) {
-      console.error("Erro ao excluir aviso:", error);
-      toast.error("Erro ao excluir aviso.");
-    }
+    });
   };
 
   const resetForm = () => {
@@ -285,6 +308,7 @@ export default function AdminMuralPage() {
                   <label>Sede</label>
                   <div className={`${styles.customSelect} customSelect`}>
                     <button 
+                      type="button"
                       className={styles.selectBtn}
                       onClick={() => setShowSedeDropdown(!showSedeDropdown)}
                     >
@@ -293,6 +317,7 @@ export default function AdminMuralPage() {
                     {showSedeDropdown && (
                       <div className={styles.selectMenu}>
                         <button
+                          type="button"
                           className={styles.selectItem}
                           onClick={() => { setSede("Geral"); setShowSedeDropdown(false); }}
                         >
@@ -301,6 +326,7 @@ export default function AdminMuralPage() {
                         {sedes.map((s) => (
                           <button
                             key={s.id}
+                            type="button"
                             className={styles.selectItem}
                             onClick={() => { setSede(s.nome); setShowSedeDropdown(false); }}
                           >
@@ -315,6 +341,7 @@ export default function AdminMuralPage() {
                   <label>Categoria</label>
                   <div className={`${styles.customSelect} customSelect`}>
                     <button 
+                      type="button"
                       className={styles.selectBtn}
                       onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
                     >
@@ -325,6 +352,7 @@ export default function AdminMuralPage() {
                         {["Eventos", "Social", "Liderança", "Aviso", "Outros"].map((cat) => (
                           <button
                             key={cat}
+                            type="button"
                             className={styles.selectItem}
                             onClick={() => { setCategory(cat); setShowCategoryDropdown(false); }}
                           >
@@ -379,6 +407,17 @@ export default function AdminMuralPage() {
           </div>
         </div>
       )}
+
+      {/* ConfirmModal para exclusões e ações críticas */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }

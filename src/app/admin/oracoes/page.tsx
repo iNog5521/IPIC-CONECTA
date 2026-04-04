@@ -6,11 +6,27 @@ import { CheckCircle, Trash2, MapPin, Search } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { toast } from "sonner";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function AdminOracoesPage() {
   const [prayers, setPrayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Modal de confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     // Busca todos os pedidos, do mais recente para o mais antigo
@@ -34,15 +50,22 @@ export default function AdminOracoesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Confirmar a exclusão deste pedido de oração da base de dados?")) {
-      try {
-        await deleteDoc(doc(db, "oracoes", id));
-        toast.success("Pedido deletado com sucesso.");
-      } catch (err) {
-        toast.error("Erro ao deletar.");
+  const handleDelete = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Excluir Pedido",
+      message: "Tem certeza que deseja excluir permanentemente este pedido de oração?",
+      isDestructive: true,
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "oracoes", id));
+          toast.success("Pedido deletado com sucesso.");
+        } catch (err) {
+          toast.error("Erro ao deletar.");
+        }
       }
-    }
+    });
   };
 
   const filteredPrayers = prayers.filter(p => {
@@ -116,6 +139,17 @@ export default function AdminOracoesPage() {
           ))}
         </div>
       )}
+
+      {/* ConfirmModal para exclusões e ações críticas */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }

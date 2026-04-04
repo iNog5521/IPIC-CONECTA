@@ -9,12 +9,28 @@ import { collection, addDoc, query, where, onSnapshot, serverTimestamp, deleteDo
 import Link from "next/link";
 import { toast } from "sonner";
 import { OracaoPedido } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function OracoesPage() {
   const { user, profile, loading } = useAuth();
   const [pedido, setPedido] = useState("");
   const [historico, setHistorico] = useState<OracaoPedido[]>([]);
   const [isSending, setIsSending] = useState(false);
+
+  // Modal de confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -68,14 +84,23 @@ export default function OracoesPage() {
     setIsSending(false);
   };
 
-  const handleDeletePedido = async (id: string) => {
-    if (!confirm("Deseja realmente remover este pedido de oração?")) return;
-    try {
-      await deleteDoc(doc(db, "oracoes", id));
-    } catch (e) {
-      console.error("Erro ao excluir oração:", e);
-      toast.error("Não foi possível excluir o pedido.");
-    }
+  const handleDeletePedido = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Excluir Pedido",
+      message: "Deseja realmente remover este pedido de oração?",
+      isDestructive: true,
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "oracoes", id));
+          toast.success("Pedido removido.");
+        } catch (e) {
+          console.error("Erro ao excluir oração:", e);
+          toast.error("Não foi possível excluir o pedido.");
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -175,6 +200,17 @@ export default function OracoesPage() {
           </div>
         )}
       </div>
+
+      {/* ConfirmModal para exclusões e ações críticas */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }
