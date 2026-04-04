@@ -6,10 +6,13 @@ const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
 let adminApp: App;
 
-function getFirebaseAdminApp(): App {
+function getFirebaseAdminApp(): App | null {
   if (getApps().length === 0) {
     if (!serviceAccountKey) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY não configurado no .env.local ou na Vercel");
+      if (process.env.NODE_ENV === 'production') {
+        console.warn("FIREBASE_SERVICE_ACCOUNT_KEY não configurado.");
+      }
+      return null;
     }
     
     try {
@@ -19,7 +22,7 @@ function getFirebaseAdminApp(): App {
       });
     } catch (error) {
       console.error("Erro ao processar FIREBASE_SERVICE_ACCOUNT_KEY:", error);
-      throw error;
+      return null;
     }
   } else {
     adminApp = getApps()[0];
@@ -27,5 +30,14 @@ function getFirebaseAdminApp(): App {
   return adminApp;
 }
 
-export const adminAuth: Auth = getAuth(getFirebaseAdminApp());
-export const adminDb: Firestore = getFirestore(getFirebaseAdminApp());
+export const getAdminAuth = (): Auth | null => {
+  const app = getFirebaseAdminApp();
+  if (!app) return null;
+  return getAuth(app);
+};
+
+export const getAdminDb = (): Firestore | null => {
+  const app = getFirebaseAdminApp();
+  if (!app) return null;
+  return getFirestore(app);
+};

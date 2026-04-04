@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
+
+export const dynamic = 'force-dynamic';
 
 export async function DELETE(request: Request) {
   try {
@@ -11,7 +13,11 @@ export async function DELETE(request: Request) {
     }
 
     try {
-      await adminAuth.deleteUser(userId);
+      const auth = getAdminAuth();
+      if (!auth) {
+        throw new Error("Serviço de autenticação não disponível.");
+      }
+      await auth.deleteUser(userId);
     } catch (authError: any) {
       if (authError.code === 'auth/user-not-found') {
         console.log("Usuário não encontrado no Auth, continuando para excluir do Firestore...");

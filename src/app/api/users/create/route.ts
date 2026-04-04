@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { getAdminDb } from "@/lib/firebase-admin";
 import { UserProfile } from "@/types";
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +24,11 @@ export async function POST(request: Request) {
     };
 
     // Salvar no Firestore via Admin SDK
-    await adminDb.collection("users").doc(userData.uid).set(finalUserData);
+    const db = getAdminDb();
+    if (!db) {
+      throw new Error("Serviço de banco de dados não disponível.");
+    }
+    await db.collection("users").doc(userData.uid).set(finalUserData);
 
     console.log(`Perfil criado com sucesso via API para UID: ${userData.uid} (Cargo: ${role})`);
 
