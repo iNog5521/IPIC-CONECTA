@@ -10,13 +10,9 @@ import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } 
 import { doc, setDoc, collection, query, onSnapshot } from "firebase/firestore";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { toast } from "sonner";
+import { Sede, UserProfile } from "@/types";
 
-interface Sede {
-  id: string;
-  nome: string;
-  endereco: string;
-  active: boolean;
-}
+
 
 export default function CadastroPage() {
   const router = useRouter();
@@ -67,13 +63,7 @@ export default function CadastroPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
       const user = userCredential.user;
 
-      const isOwner = email.toLowerCase() === "inog5521@gmail.com";
-      const role = isOwner ? "owner" : "user";
-
-      // 2. Forçar refresh do token ANTES de escrever no Firestore
-      // Sem isso, o token recém-criado pode não ter propagado e o setDoc falha silenciosamente
-      await user.getIdToken(true);
-
+      // 2. Montar objeto do perfil (sem o 'role', que será definido no servidor)
       const userData = {
         uid: user.uid,
         nome: nome,
@@ -82,13 +72,22 @@ export default function CadastroPage() {
         fielDesde: fielDesde.toISOString(),
         telefone: telefone || "",
         sede: sede,
-        role: role,
         createdAt: new Date().toISOString()
       };
 
-      // 3. Agora salvar o perfil no Firestore (com token válido)
-      await setDoc(doc(db, "users", user.uid), userData);
-      console.log("Perfil salvo com sucesso para UID:", user.uid);
+      // 3. Salvar o perfil através da API (Segurança: backend define o role)
+      const res = await fetch("/api/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Erro ao criar perfil no servidor");
+      }
+
+      console.log("Perfil criado com sucesso via API para UID:", user.uid);
 
       // 4. Atualizar o displayName no Auth
       await updateProfile(user, { displayName: nome });

@@ -47,13 +47,7 @@ interface MensagemAdmin {
 }
 
 export default function PerfilPage() {
-  const { user, loading } = useAuth();
-
-  // Perfil gerenciado localmente com onSnapshot próprio.
-  // Isso garante que a página carregue os dados ao montar, independente
-  // do timing do AuthContext — resolve o problema de dados em branco na navegação SPA.
-  const [profile, setProfile] = useState<any>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { user, profile, loading, profileLoading } = useAuth();
 
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [showSedeModal, setShowSedeModal] = useState(false);
@@ -73,26 +67,6 @@ export default function PerfilPage() {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
-
-  // Subscription direta ao perfil do usuário no Firestore.
-  // Ao montar a página já inicia a escuta — não depende do timing do AuthContext.
-  useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      setProfileLoading(false);
-      return;
-    }
-    setProfileLoading(true);
-    const docRef = doc(db, "users", user.uid);
-    const unsub = onSnapshot(docRef, (snap) => {
-      setProfile(snap.exists() ? snap.data() : null);
-      setProfileLoading(false);
-    }, (err) => {
-      console.error("Erro ao carregar perfil:", err);
-      setProfileLoading(false);
-    });
-    return () => unsub();
-  }, [user?.uid]);
 
   useEffect(() => {
     const q = query(collection(db, "sedes"));
@@ -118,7 +92,7 @@ export default function PerfilPage() {
         id: doc.id,
         ...doc.data()
       })) as MensagemAdmin[];
-      // Filtra no客户端 mensagens excluídas
+      // Filtra no cliente mensagens excluídas
       setMinhasMensagens(msgs.filter((m: MensagemAdmin) => !m.deletedAt));
     });
     return () => unsub();

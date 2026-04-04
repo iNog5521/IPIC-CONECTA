@@ -9,13 +9,9 @@ import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { toast } from "sonner";
+import { Sede, UserProfile } from "@/types";
 
-interface Sede {
-  id: string;
-  nome: string;
-  endereco: string;
-  active: boolean;
-}
+
 
 interface MensagemAdmin {
   id: string;
@@ -30,7 +26,7 @@ interface MensagemAdmin {
 
 export default function AdminMembrosPage() {
   const { user } = useAuth();
-  const [membros, setMembros] = useState<any[]>([]);
+  const [membros, setMembros] = useState<UserProfile[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sedeSelecionada, setSedeSelecionada] = useState("todas");
@@ -49,9 +45,9 @@ export default function AdminMembrosPage() {
   useEffect(() => {
     const q = query(collection(db, "users"));
     const unsub = onSnapshot(q, (snapshot) => {
-      const usersList: any[] = [];
+      const usersList: UserProfile[] = [];
       snapshot.forEach((doc) => {
-        usersList.push({ id: doc.id, ...doc.data() });
+        usersList.push({ id: doc.id, ...doc.data() } as UserProfile);
       });
       setMembros(usersList);
       setLoading(false);
@@ -292,7 +288,7 @@ export default function AdminMembrosPage() {
                         </div>
                         <div className={styles.memberInfo}>
                           <span className={styles.name}>
-                            {m.nome || m.displayName || "Sem nome"} {m.email === "inog5521@gmail.com" && "👑"}
+                            {m.nome || "Sem nome"} {m.email === "inog5521@gmail.com" && "👑"}
                           </span>
                           <span className={styles.email}>{m.email || "Sem e-mail"}</span>
                         </div>

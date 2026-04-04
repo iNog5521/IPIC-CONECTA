@@ -8,11 +8,12 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, query, where, onSnapshot, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import Link from "next/link";
 import { toast } from "sonner";
+import { OracaoPedido } from "@/types";
 
 export default function OracoesPage() {
   const { user, profile, loading } = useAuth();
   const [pedido, setPedido] = useState("");
-  const [historico, setHistorico] = useState<any[]>([]);
+  const [historico, setHistorico] = useState<OracaoPedido[]>([]);
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
@@ -25,9 +26,9 @@ export default function OracoesPage() {
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
-      const list: any[] = [];
+      const list: OracaoPedido[] = [];
       snapshot.forEach(doc => {
-        list.push({ id: doc.id, ...doc.data() });
+        list.push({ id: doc.id, ...doc.data() } as OracaoPedido);
       });
       
       // Ordena por data mais recente localmente (Bypass de Firebase Index Error)
@@ -50,7 +51,7 @@ export default function OracoesPage() {
     try {
       await addDoc(collection(db, "oracoes"), {
         uid: user.uid,
-        nome: user.displayName || profile?.nome || "Membro IPIC",
+        nome: profile?.nome || user.displayName || "Membro IPIC",
         sede: profile?.sede || "Não definida",
         texto: pedido.trim(),
         status: "Pendente",

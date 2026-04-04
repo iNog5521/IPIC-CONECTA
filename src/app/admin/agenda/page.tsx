@@ -15,35 +15,9 @@ import {
   orderBy
 } from "firebase/firestore";
 import { toast } from "sonner";
+import { Sede, Culto, Confirmacao } from "@/types";
 
-interface Culto {
-  id: string;
-  name: string;
-  description: string;
-  day: string;
-  time: string;
-  sede: string;
-  active: boolean;
-}
 
-interface Confirmacao {
-  id: string;
-  cultoId: string;
-  cultoTime?: string;
-  cultoDay?: string;
-  userId: string;
-  userName: string;
-  userEmail?: string;
-  sede?: string;
-  createdAt: any;
-}
-
-interface Sede {
-  id: string;
-  nome: string;
-  endereco: string;
-  active: boolean;
-}
 
 const DIAS_SEMANA = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 

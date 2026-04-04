@@ -16,14 +16,9 @@ import {
   orderBy
 } from "firebase/firestore";
 import { toast } from "sonner";
+import { Sede } from "@/types";
 
-interface Sede {
-  id: string;
-  nome: string;
-  endereco: string;
-  active: boolean;
-  createdAt: any;
-}
+
 
 export default function AdminSedesPage() {
   const [sedes, setSedes] = useState<Sede[]>([]);

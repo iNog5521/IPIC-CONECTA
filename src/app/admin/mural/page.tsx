@@ -16,25 +16,9 @@ import {
   serverTimestamp 
 } from "firebase/firestore";
 import { toast } from "sonner";
+import { Sede, Aviso } from "@/types";
 
 
-interface Aviso {
-  id: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  sede: string;
-  imageUrl: string;
-  storagePath: string;
-  createdAt: any;
-}
-
-interface Sede {
-  id: string;
-  nome: string;
-  endereco: string;
-  active: boolean;
-}
 
 export default function AdminMuralPage() {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
