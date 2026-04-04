@@ -33,6 +33,14 @@ export interface Aviso {
   createdAt: any;
 }
 
+export interface ModeloMural {
+  id: string;
+  name: string;
+  imageUrl: string;
+  storagePath: string;
+  createdAt: any;
+}
+
 export interface Confirmacao {
   id: string;
   cultoId: string;
