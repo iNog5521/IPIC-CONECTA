@@ -70,6 +70,7 @@ export default function CadastroPage() {
 
       // 3. Montar objeto do perfil
       const userData: UserProfile = {
+        id: user.uid,
         uid: user.uid,
         nome: nome,
         email: email.toLowerCase(),
