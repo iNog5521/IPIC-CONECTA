@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Mail, Lock, Phone, MapPin, Calendar, ArrowRight, Heart, X } from "lucide-react";
+import { User, Mail, Lock, Phone, MapPin, ArrowRight, X } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc, collection, query, onSnapshot } from "firebase/firestore";
@@ -62,12 +62,16 @@ export default function CadastroPage() {
     }
 
     try {
-      // Create user in Firebase Auth
+      // 1. Criar usuário no Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
       const user = userCredential.user;
 
       const isOwner = email.toLowerCase() === "inog5521@gmail.com";
       const role = isOwner ? "owner" : "user";
+
+      // 2. Forçar refresh do token ANTES de escrever no Firestore
+      // Sem isso, o token recém-criado pode não ter propagado e o setDoc falha silenciosamente
+      await user.getIdToken(true);
 
       const userData = {
         uid: user.uid,
@@ -81,12 +85,14 @@ export default function CadastroPage() {
         createdAt: new Date().toISOString()
       };
 
+      // 3. Agora salvar o perfil no Firestore (com token válido)
       await setDoc(doc(db, "users", user.uid), userData);
       console.log("Perfil salvo com sucesso para UID:", user.uid);
 
-      await user.getIdToken(true);
+      // 4. Atualizar o displayName no Auth
       await updateProfile(user, { displayName: nome });
-      
+
+      // 5. Por último, enviar o email de verificação
       try {
         await sendEmailVerification(user);
         console.log("Email de verificação enviado");
