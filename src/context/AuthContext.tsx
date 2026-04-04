@@ -35,8 +35,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const isFounder = fbUser?.email?.toLowerCase() === 'inog5521@gmail.com';
       
       if (fbUser && !fbUser.emailVerified && !isFounder) {
-        // Usuário existe mas não verificou o e-mail (e não é founder)
-        // Faz logout e redireciona para verificar
+        // Se o usuário está no fluxo de cadastro, NÃO interromper.
+        // O onAuthStateChanged dispara imediatamente após createUserWithEmailAndPassword,
+        // antes que setDoc consiga salvar o perfil no Firestore. Forçar signOut aqui
+        // cria uma race condition que faz o setDoc falhar silenciosamente (cache offline).
+        if (typeof window !== 'undefined' && window.location.pathname === '/cadastro') {
+          setUser(fbUser);
+          setProfile(null);
+          setLoading(false);
+          return; // Deixa o fluxo de cadastro concluir normalmente
+        }
+
+        // Fora do cadastro: usuário não verificou o e-mail → faz logout
         await auth.signOut();
         setUser(null);
         setProfile(null);
