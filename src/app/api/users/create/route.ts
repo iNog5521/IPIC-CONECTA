@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     // Salvar no Firestore via Admin SDK
     const db = getAdminDb();
     if (!db) {
-      throw new Error("Serviço de banco de dados não disponível.");
+      console.error("❌ Erro: getAdminDb() retornou null na API de criação.");
+      throw new Error("Serviço de banco de dados não disponível (Erro na inicialização do Admin SDK).");
     }
     await db.collection("users").doc(userData.uid).set(finalUserData);
 
