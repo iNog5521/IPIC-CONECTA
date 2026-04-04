@@ -98,18 +98,29 @@ export default function PerfilPage() {
 
   useEffect(() => {
     if (!user) return;
+    // Removido orderBy para evitar dependência de índice composto e possíveis erros de consulta
     const q = query(
       collection(db, "mensagens_admin"), 
-      where("userId", "==", user.uid),
-      orderBy("data", "desc")
+      where("userId", "==", user.uid)
     );
     const unsub = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as MensagemAdmin[];
-      // Filtra no cliente mensagens excluídas
-      setMinhasMensagens(msgs.filter((m: MensagemAdmin) => !m.deletedAt));
+      
+      // Ordenação manual no cliente (mais robusto e evita erros de índice)
+      const sortedMsgs = msgs
+        .filter((m: MensagemAdmin) => !m.deletedAt)
+        .sort((a, b) => {
+          const dateA = a.data?.toDate ? a.data.toDate().getTime() : 0;
+          const dateB = b.data?.toDate ? b.data.toDate().getTime() : 0;
+          return dateB - dateA;
+        });
+
+      setMinhasMensagens(sortedMsgs);
+    }, (error) => {
+      console.error("Erro ao carregar mensagens:", error);
     });
     return () => unsub();
   }, [user]);
