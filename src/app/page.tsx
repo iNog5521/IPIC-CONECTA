@@ -28,6 +28,11 @@ export default function Home() {
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [cultos, setCultos] = useState<Culto[]>([]);
   const [palavra, setPalavra] = useState<{texto: string; referencia: string} | null>(null);
+  
+  // Loading states
+  const [loadingSedes, setLoadingSedes] = useState(true);
+  const [loadingCultos, setLoadingCultos] = useState(true);
+  const [loadingPalavra, setLoadingPalavra] = useState(true);
 
   useEffect(() => {
     const qSedes = query(collection(db, "sedes"));
@@ -37,8 +42,9 @@ export default function Home() {
         ...doc.data()
       })) as Sede[];
       setSedes(docs.filter((s: Sede) => s.active));
+      setLoadingSedes(false);
     }, (err) => {
-      // Silenciar erros de permissão
+      setLoadingSedes(false);
     });
 
     const qCultos = query(collection(db, "cultos"));
@@ -48,8 +54,9 @@ export default function Home() {
         ...doc.data()
       })) as Culto[];
       setCultos(docs.filter((c: Culto) => c.active));
+      setLoadingCultos(false);
     }, (err) => {
-      // Silenciar erros de permissão
+      setLoadingCultos(false);
     });
 
     const qPalavra = query(collection(db, "palavra"));
@@ -61,8 +68,9 @@ export default function Home() {
           referencia: docData.referencia
         });
       }
+      setLoadingPalavra(false);
     }, (err) => {
-      // Silenciar erros de permissão
+      setLoadingPalavra(false);
     });
 
     return () => {
@@ -79,10 +87,20 @@ export default function Home() {
         <div className={styles.heroOverlay}>
           <div className={styles.heroContent}>
             <span className={styles.heroLabel}>Palavra do Dia</span>
-            <h1 className={styles.heroText}>
-              "{palavra?.texto || "O Senhor é o meu pastor e nada me faltará."}"
-            </h1>
-            <p className={styles.heroRef}>- {palavra?.referencia || "Salmos 23:1"}</p>
+            {loadingPalavra ? (
+              <>
+                <div className={`${styles.skeletonDark} ${styles.skeletonText}`} style={{ height: '2rem', width: '90%' }}></div>
+                <div className={`${styles.skeletonDark} ${styles.skeletonText}`} style={{ height: '2rem', width: '70%' }}></div>
+                <div className={`${styles.skeletonDark} ${styles.skeletonRef}`}></div>
+              </>
+            ) : (
+              <>
+                <h1 className={styles.heroText}>
+                  "{palavra?.texto || "O Senhor é o meu pastor e nada me faltará."}"
+                </h1>
+                <p className={styles.heroRef}>- {palavra?.referencia || "Salmos 23:1"}</p>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -104,7 +122,12 @@ export default function Home() {
             <Link href="/cultos" className={styles.seeAll} prefetch={false}>Ver todos</Link>
           </div>
           
-          {cultos.length === 0 ? (
+          {loadingCultos ? (
+            <div style={{ display: 'flex', gap: '1rem', overflow: 'hidden', padding: '0.25rem 0' }}>
+              <div className={`${styles.skeleton} ${styles.skeletonCard}`}></div>
+              <div className={`${styles.skeleton} ${styles.skeletonCard}`}></div>
+            </div>
+          ) : cultos.length === 0 ? (
             <div style={{ 
               background: 'var(--surface)', borderRadius: '16px', padding: '2rem', 
               border: '1px solid var(--border)', textAlign: 'center', color: 'var(--text-muted)' 
@@ -229,7 +252,12 @@ export default function Home() {
             <h2>Nossas Sedes</h2>
           </div>
           <div className={styles.sedesGrid}>
-            {sedes.length > 0 ? (
+            {loadingSedes ? (
+              <>
+                <div className={styles.skeleton} style={{ height: '80px', borderRadius: '12px' }}></div>
+                <div className={styles.skeleton} style={{ height: '80px', borderRadius: '12px' }}></div>
+              </>
+            ) : sedes.length > 0 ? (
               sedes.map((sede) => (
                 <div key={sede.id} className={styles.sedeCard}>
                   <h4>{sede.nome}</h4>

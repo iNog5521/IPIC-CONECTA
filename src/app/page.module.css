@@ -236,3 +236,55 @@
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+/* SKELETON ANIMATIONS */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f3f4f6 0%,
+    #e5e7eb 50%,
+    #f3f4f6 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+.skeletonDark {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeletonText {
+  height: 1.5rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.skeletonRef {
+  height: 0.9rem;
+  width: 40%;
+}
+
+.skeletonCard {
+  width: 280px;
+  height: 160px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
