@@ -31,6 +31,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let unsubProfile: (() => void) | undefined;
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      // Sempre reseta para loading=true no início de cada mudança de estado.
+      // Isso garante que nenhuma página renderize com dados desatualizados
+      // enquanto aguardamos o onSnapshot retornar o perfil do Firestore.
+      setLoading(true);
+
       // Founder não precisa de verificação de e-mail
       const isFounder = fbUser?.email?.toLowerCase() === 'inog5521@gmail.com';
       
@@ -68,10 +73,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           document.cookie = "admin_session=true; path=/; max-age=86400";
         }
 
-        // Coloca em loading enquanto busca o perfil no Firestore.
-        // Sem isso, a página renderiza com profile=null antes do onSnapshot chegar,
-        // causando campos em branco mesmo com dados no Firestore.
-        setLoading(true);
+        // Nota: setLoading(true) já foi chamado no topo do callback.
+        // O setLoading(false) será chamado pelo onSnapshot quando os dados chegarem.
 
         try {
           const docRef = doc(db, "users", fbUser.uid);
