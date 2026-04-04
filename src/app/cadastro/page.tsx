@@ -137,6 +137,7 @@ export default function CadastroPage() {
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 required disabled={loading} 
+                autoComplete="name"
               />
             </div>
           </div>
@@ -151,6 +152,7 @@ export default function CadastroPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required disabled={loading} 
+                autoComplete="email"
               />
             </div>
           </div>
@@ -174,6 +176,7 @@ export default function CadastroPage() {
                   value={telefone}
                   onChange={(e) => setTelefone(e.target.value)}
                   disabled={loading} 
+                  autoComplete="tel"
                 />
               </div>
             </div>
@@ -223,6 +226,7 @@ export default function CadastroPage() {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required disabled={loading} 
+                autoComplete="new-password"
               />
             </div>
           </div>

@@ -120,6 +120,7 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required disabled={loading}
+                autoComplete="email"
               />
             </div>
           </div>
@@ -139,6 +140,7 @@ function LoginContent() {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required disabled={loading}
+                autoComplete="current-password"
               />
             </div>
           </div>

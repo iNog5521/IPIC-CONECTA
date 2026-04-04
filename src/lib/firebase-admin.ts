@@ -2,42 +2,46 @@ import { initializeApp, getApps, cert, App } from "firebase-admin/app";
 import { getAuth, Auth } from "firebase-admin/auth";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
 
-const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-let adminApp: App;
-
 function getFirebaseAdminApp(): App | null {
-  if (getApps().length === 0) {
-    if (!serviceAccountKey) {
-      if (process.env.NODE_ENV === 'production') {
-        console.warn("FIREBASE_SERVICE_ACCOUNT_KEY não configurado.");
-      }
-      return null;
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+  if (getApps().length > 0) {
+    return getApps()[0];
+  }
+
+  if (!serviceAccountKey) {
+    return null;
+  }
+  
+  try {
+    let sanitizedKey = serviceAccountKey.trim();
+    
+    // Remove aspas simples ou duplas externas que podem vir do .env.local
+    if ((sanitizedKey.startsWith("'") && sanitizedKey.endsWith("'")) || 
+        (sanitizedKey.startsWith('"') && sanitizedKey.endsWith('"'))) {
+      sanitizedKey = sanitizedKey.substring(1, sanitizedKey.length - 1);
     }
     
-    try {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-      adminApp = initializeApp({
-        credential: cert(serviceAccount)
-      });
-    } catch (error) {
-      console.error("Erro ao processar FIREBASE_SERVICE_ACCOUNT_KEY:", error);
-      return null;
+    // Fallback: se ainda estiver "sujo" com escapes de barras, limpa
+    if (sanitizedKey.includes('\\"')) {
+      sanitizedKey = sanitizedKey.split('\\"').join('"').split('\\\\n').join('\n');
     }
-  } else {
-    adminApp = getApps()[0];
+
+    return initializeApp({
+      credential: cert(JSON.parse(sanitizedKey))
+    });
+  } catch (error) {
+    console.error("❌ Erro ao inicializar Firebase Admin:", error);
+    return null;
   }
-  return adminApp;
 }
 
 export const getAdminAuth = (): Auth | null => {
   const app = getFirebaseAdminApp();
-  if (!app) return null;
-  return getAuth(app);
+  return app ? getAuth(app) : null;
 };
 
 export const getAdminDb = (): Firestore | null => {
   const app = getFirebaseAdminApp();
-  if (!app) return null;
-  return getFirestore(app);
+  return app ? getFirestore(app) : null;
 };

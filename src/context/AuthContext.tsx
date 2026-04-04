@@ -46,18 +46,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (fbUser) {
-        // Regra de verificação de e-mail (exceto para o admin fundador)
         const isFounder = fbUser.email?.toLowerCase() === 'inog5521@gmail.com';
-        
-        if (!fbUser.emailVerified && !isFounder) {
-          // Se não estiver verificado, permitimos o estado mas não liberamos o perfil completo
-          // A proteção de rotas deve ser feita via Middleware ou nas páginas
-          setProfile(null);
-          setProfileLoading(false);
-          return;
-        }
-
         setProfileLoading(true);
+
         try {
           const docRef = doc(db, "users", fbUser.uid);
           unsubProfile = onSnapshot(docRef, (docSnap) => {
@@ -65,8 +56,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               const data = docSnap.data() as UserProfile;
               setProfile(data);
               
-              // Gerenciar cookie de admin para o Middleware
-              if (data.role === 'admin' || data.role === 'owner' || isFounder) {
+              // Gerenciar cookie de admin para o Middleware (apenas se verificado ou fundador)
+              const canAccessAdmin = (fbUser.emailVerified || isFounder) && 
+                                   (data.role === 'admin' || data.role === 'owner');
+              
+              if (canAccessAdmin) {
                 document.cookie = "admin_session=true; path=/; max-age=86400";
               } else {
                 document.cookie = "admin_session=; path=/; max-age=0";
