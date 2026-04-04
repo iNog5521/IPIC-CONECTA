@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
-import { Plus, Image as ImageIcon, Trash2, Edit2, MapPin, Upload, X, Loader2, ChevronDown, Check } from "lucide-react";
-import { db } from "@/lib/firebase";
+import { Plus, Image as ImageIcon, Trash2, Edit2, MapPin, Upload, X, Loader2, ChevronDown, Check, Lock } from "lucide-react";
+import { db, auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { 
   collection, 
   addDoc, 
-  getDocs, 
+  getDoc, 
   deleteDoc, 
   doc, 
   query, 
@@ -26,6 +27,8 @@ export default function AdminMuralPage() {
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [modelos, setModelos] = useState<ModeloMural[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModelosModalOpen, setIsModelosModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,9 +65,37 @@ export default function AdminMuralPage() {
     onConfirm: () => {},
   });
 
+  // 1. Verificação de Autenticação e Cargo (Smart Loading)
   useEffect(() => {
-    if (!db) return;
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          // Buscar o cargo do usuário diretamente no Firestore
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const role = userDoc.data().role;
+            if (role === 'admin' || role === 'owner') {
+              setIsAdmin(true);
+            } else {
+              setIsAdmin(false);
+              toast.error("Você não tem permissão para acessar esta área.");
+            }
+          }
+        } catch (error) {
+          console.error("Erro ao verificar cargo:", error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+      setAuthLoading(false);
+    });
 
+    return () => unsubscribeAuth();
+  }, []);
+
+  // 2. Click outside para dropdowns
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.customSelect')) {
@@ -77,8 +108,9 @@ export default function AdminMuralPage() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // 3. Listeners de Dados (Só começam após ser confirmado como Admin)
   useEffect(() => {
-    if (!db) return;
+    if (!db || !isAdmin) return;
 
     const qSedes = query(collection(db, "sedes"));
     const unsubSedes = onSnapshot(qSedes, (snapshot) => {
@@ -90,13 +122,18 @@ export default function AdminMuralPage() {
     });
 
     const q = query(collection(db, "avisos"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeAvisos = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Aviso[];
       setAvisos(docs);
       setLoading(false);
+    }, (error) => {
+      console.error("Erro no listener de avisos:", error);
+      if (error.code === 'permission-denied') {
+        toast.error("Erro de permissão ao carregar avisos.");
+      }
     });
 
     const qModelos = query(collection(db, "modelos_mural"), orderBy("createdAt", "desc"));
@@ -106,19 +143,22 @@ export default function AdminMuralPage() {
         ...doc.data()
       })) as ModeloMural[];
       setModelos(docs);
+    }, (error) => {
+      console.error("Erro no listener de modelos:", error);
+      // Aqui tratamos o erro de permissão graciosamente
     });
 
     return () => {
       unsubSedes();
-      unsubscribe();
+      unsubscribeAvisos();
       unsubModelos();
     };
-  }, []);
+  }, [isAdmin]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedModelo(null); // Desmarca modelo se subir manual
+      setSelectedModelo(null);
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -142,6 +182,10 @@ export default function AdminMuralPage() {
 
   const handleSaveModelo = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) {
+      toast.error("Ação não permitida para o seu usuário.");
+      return;
+    }
     if (!modeloName || !modeloFile) {
       toast.error("Preencha o nome e selecione uma imagem para o modelo.");
       return;
@@ -173,9 +217,13 @@ export default function AdminMuralPage() {
       setModeloFile(null);
       setModeloPreview(null);
       toast.success("Modelo adicionado com sucesso!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar modelo:", error);
-      toast.error("Erro ao salvar modelo.");
+      if (error.code === 'permission-denied') {
+        toast.error("Você não tem permissão para salvar modelos.");
+      } else {
+        toast.error("Erro ao salvar modelo.");
+      }
     } finally {
       setSavingModelo(false);
     }
@@ -207,8 +255,8 @@ export default function AdminMuralPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     
-    // Agora aceita OU imagem OU modelo selecionado
     if (!title || !excerpt || (!imageFile && !selectedModelo)) {
       toast.error("Por favor, preencha todos os campos e selecione uma imagem ou modelo.");
       return;
@@ -221,7 +269,7 @@ export default function AdminMuralPage() {
       
       if (selectedModelo) {
         imageUrl = selectedModelo.imageUrl;
-        storagePath = ""; // Não definimos storagePath para avisos com modelo para não deletarmos o modelo por engano ao deletar o aviso
+        storagePath = "";
       } else if (imageFile) {
         const formData = new FormData();
         formData.append("file", imageFile);
@@ -242,7 +290,6 @@ export default function AdminMuralPage() {
         storagePath = uploadData.path;
       }
 
-      // 2. Save to Firestore
       await addDoc(collection(db, "avisos"), {
         title,
         excerpt,
@@ -253,14 +300,16 @@ export default function AdminMuralPage() {
         createdAt: serverTimestamp(),
       });
 
-      // Reset & Close
       setIsModalOpen(false);
       resetForm();
       toast.success("Aviso publicado com sucesso!");
     } catch (error: any) {
       console.error("Erro ao salvar aviso:", error);
-      const msg = error.message ? `Erro: ${error.message}` : "Erro ao salvar o aviso.";
-      toast.error(msg);
+      if (error.code === 'permission-denied') {
+        toast.error("Erro: Permissão negada pelo banco de dados.");
+      } else {
+        toast.error("Erro ao salvar o aviso.");
+      }
     } finally {
       setSaving(false);
     }
@@ -275,14 +324,11 @@ export default function AdminMuralPage() {
       confirmText: "Excluir Aviso",
       onConfirm: async () => {
         try {
-          // 1. Delete from Storage via API (apenas se for upload manual, indicado por ter storagePath)
           if (aviso.storagePath) {
             await fetch(`/api/upload?path=${encodeURIComponent(aviso.storagePath)}`, {
               method: "DELETE",
             }).catch(err => console.warn("Erro ao deletar arquivo do storage:", err));
           }
-
-          // 2. Delete from Firestore
           await deleteDoc(doc(db, "avisos", aviso.id));
           toast.success("Aviso excluído!");
         } catch (error) {
@@ -302,6 +348,32 @@ export default function AdminMuralPage() {
     setImagePreview(null);
     setSelectedModelo(null);
   };
+
+  // Renderização de Carregamento de Autenticação
+  if (authLoading) {
+    return (
+      <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <Loader2 className="animate-spin" size={48} color="var(--primary)" />
+          <p style={{ marginTop: '1rem', color: 'var(--text-muted)', fontWeight: '600' }}>Validando suas permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderização de Acesso Negado
+  if (!isAdmin) {
+    return (
+      <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center', background: 'white', padding: '3rem', borderRadius: '24px', boxShadow: 'var(--shadow-lg)', maxWidth: '400px' }}>
+          <Lock size={64} color="#ef4444" style={{ marginBottom: '1.5rem', margin: '0 auto' }} />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem' }}>Acesso Restrito</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Você não tem permissão para gerenciar o Mural. Se você for um administrador, entre em contato com o suporte.</p>
+          <button onClick={() => window.location.href = '/'} style={{ background: 'var(--primary)', color: 'white', padding: '0.75rem 2rem', borderRadius: '12px', border: 'none', fontWeight: '700', cursor: 'pointer' }}>Voltar para a Home</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -510,7 +582,6 @@ export default function AdminMuralPage() {
                   {modelos.length > 0 && <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '700' }}>ESCOLHA UM MODELO ABAIXO OU FAÇA UPLOAD</span>}
                 </label>
 
-                {/* Seletor de Modelos */}
                 {modelos.length > 0 && (
                   <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', padding: '0.5rem 0', marginBottom: '1rem', scrollbarWidth: 'none' }}>
                     {modelos.map((m) => (
