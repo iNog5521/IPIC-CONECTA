@@ -311,7 +311,7 @@ export default function CultosPage() {
                       {culto.sede === "Geral" ? "Todas as Sedes" : culto.sede}
                     </p>
                     {getConfirmadosCount(culto.id) > 0 && (
-                      <p style={{ fontSize: '11px', color: '#22c55e', marginTop: '4.5rem' }}>
+                      <p style={{ fontSize: '11px', color: '#22c55e', marginTop: '0.5rem', fontWeight: '700' }}>
                          {getConfirmadosCount(culto.id)} {getConfirmadosCount(culto.id) === 1 ? "pessoa confirmada" : "pessoas confirmadas"}
                       </p>
                     )}
