@@ -23,7 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { signOut, sendPasswordResetEmail, updateProfile } from "firebase/auth";
-import { doc, updateDoc, setDoc, collection, query, onSnapshot, deleteDoc, where, orderBy } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc, collection, query, onSnapshot, deleteDoc, where, orderBy } from "firebase/firestore";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
@@ -46,10 +46,14 @@ interface MensagemAdmin {
 }
 
 export default function PerfilPage() {
-  const { user, profile, loading } = useAuth();
-  // Spinner local: mostra enquanto user está logado mas profile ainda não chegou.
-  // Timeout de 3s como safety net para não travar se o Firestore demorar.
-  const [profileTimeout, setProfileTimeout] = useState(false);
+  const { user, loading } = useAuth();
+
+  // Perfil gerenciado localmente com onSnapshot próprio.
+  // Isso garante que a página carregue os dados ao montar, independente
+  // do timing do AuthContext — resolve o problema de dados em branco na navegação SPA.
+  const [profile, setProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [showSedeModal, setShowSedeModal] = useState(false);
   const [newSede, setNewSede] = useState("");
@@ -69,12 +73,24 @@ export default function PerfilPage() {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
 
+  // Subscription direta ao perfil do usuário no Firestore.
+  // Ao montar a página já inicia a escuta — não depende do timing do AuthContext.
   useEffect(() => {
-    if (user && !profile) {
-      setProfileTimeout(false);
-      const timer = setTimeout(() => setProfileTimeout(true), 3000);
-      return () => clearTimeout(timer);
+    if (!user) {
+      setProfile(null);
+      setProfileLoading(false);
+      return;
     }
+    setProfileLoading(true);
+    const docRef = doc(db, "users", user.uid);
+    const unsub = onSnapshot(docRef, (snap) => {
+      setProfile(snap.exists() ? snap.data() : null);
+      setProfileLoading(false);
+    }, (err) => {
+      console.error("Erro ao carregar perfil:", err);
+      setProfileLoading(false);
+    });
+    return () => unsub();
   }, [user?.uid]);
 
   useEffect(() => {
@@ -292,17 +308,7 @@ export default function PerfilPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-      </div>
-    );
-  }
-
-  // Usuário autenticado mas perfil ainda não chegou do Firestore (navegação SPA).
-  // O onSnapshot atualizará profile em breve. Timeout de 3s como safety net.
-  if (user && !profile && !profileTimeout) {
+  if (loading || profileLoading) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
