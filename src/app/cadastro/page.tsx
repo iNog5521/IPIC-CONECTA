@@ -30,6 +30,7 @@ export default function CadastroPage() {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
+    if (!db) return;
     const q = query(collection(db, "sedes"));
     const unsub = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
@@ -59,12 +60,16 @@ export default function CadastroPage() {
     }
 
     try {
-      // 1. Criar usuário no Firebase Auth
+      // 1. Criar usuário no Firebase Auth (Lado do Cliente)
       const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
       const user = userCredential.user;
 
-      // 2. Montar objeto do perfil (sem o 'role', que será definido no servidor)
-      const userData = {
+      // 2. Determinar cargo (Segurança: Regras do Firestore validam isso)
+      const isOwner = email.toLowerCase() === "inog5521@gmail.com";
+      const role = isOwner ? "owner" : "user";
+
+      // 3. Montar objeto do perfil
+      const userData: UserProfile = {
         uid: user.uid,
         nome: nome,
         email: email.toLowerCase(),
@@ -72,27 +77,18 @@ export default function CadastroPage() {
         fielDesde: fielDesde.toISOString(),
         telefone: telefone || "",
         sede: sede,
+        role: role, // Enviado pelo cliente, mas validado rigidamente pelas Rules
         createdAt: new Date().toISOString()
       };
 
-      // 3. Salvar o perfil através da API (Segurança: backend define o role)
-      const res = await fetch("/api/users/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData)
-      });
+      // 4. Salvar o perfil DIRETOR no Firestore (Elimina erro 500 da API)
+      await setDoc(doc(db, "users", user.uid), userData);
+      console.log("Perfil criado com sucesso via Client SDK para UID:", user.uid);
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Erro ao criar perfil no servidor");
-      }
-
-      console.log("Perfil criado com sucesso via API para UID:", user.uid);
-
-      // 4. Atualizar o displayName no Auth
+      // 5. Atualizar o displayName no Auth
       await updateProfile(user, { displayName: nome });
 
-      // 5. Por último, enviar o email de verificação
+      // 6. Por último, enviar o email de verificação
       try {
         await sendEmailVerification(user);
         console.log("Email de verificação enviado");
@@ -103,11 +99,13 @@ export default function CadastroPage() {
       toast.success("Conta criada! Verifique seu e-mail para ativar a conta.");
       router.push("/login?verified=pending");
     } catch (error: any) {
-      console.error(error);
+      console.error("Erro no cadastro:", error);
       if (error.code === 'auth/email-already-in-use') {
         setErro("Este e-mail já está em uso.");
       } else if (error.code === 'auth/weak-password') {
         setErro("A senha deve ter pelo menos 6 caracteres.");
+      } else if (error.code === 'permission-denied') {
+        setErro("Erro de permissão ao criar perfil. Contate o suporte.");
       } else {
         setErro("Erro ao criar conta. Tente novamente.");
       }

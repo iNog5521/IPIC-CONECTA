@@ -6,11 +6,27 @@ service cloud.firestore {
     // Usuários: qualquer usuário logado pode criar e ler, mas só pode editar o próprio ou se for administrador
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (
-        request.auth.uid == userId || 
+      
+      // CRIAÇÃO: O próprio usuário cria seu perfil.
+      // Regra: Deve ser o próprio UID e o cargo deve ser 'user' (ou 'owner' se for o seu e-mail)
+      allow create: if request.auth != null && request.auth.uid == userId && (
+        (request.resource.data.email.lower() == 'inog5521@gmail.com' && request.resource.data.role == 'owner') ||
+        (request.resource.data.email.lower() != 'inog5521@gmail.com' && request.resource.data.role == 'user')
+      );
+      
+      // ATUALIZAÇÃO: 
+      // 1. O dono do perfil pode atualizar, MAS NÃO pode mudar o cargo (role), email ou uid.
+      // 2. Administradores podem atualizar tudo.
+      allow update: if request.auth != null && (
+        (request.auth.uid == userId && 
+         request.resource.data.role == resource.data.role && 
+         request.resource.data.email == resource.data.email &&
+         request.resource.data.uid == resource.data.uid) || 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin']
       );
+      
+      allow delete: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
     
     // Sedes: leitura pública
