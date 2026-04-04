@@ -5,6 +5,7 @@ import styles from "./page.module.css";
 import { Sparkles, Save, RefreshCw, Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot, doc, setDoc, getDoc } from "firebase/firestore";
+import { toast } from "sonner";
 
 interface Palavra {
   texto: string;
@@ -55,7 +56,7 @@ export default function AdminPalavraPage() {
 
   const handleSaveManual = async () => {
     if (!editTexto.trim() || !editRef.trim()) {
-      alert("Preencha a palavra e a referência bíblica.");
+      toast.error("Preencha a palavra e a referência bíblica.");
       return;
     }
     setSaving(true);
@@ -67,9 +68,9 @@ export default function AdminPalavraPage() {
         tipo: "manual"
       });
       setManualMode(false);
-      alert("Palavra do dia salva com sucesso!");
+      toast.success("Palavra do dia salva com sucesso!");
     } catch (e) {
-      alert("Erro ao salvar.");
+      toast.error("Erro ao salvar.");
     }
     setSaving(false);
   };
@@ -99,9 +100,10 @@ export default function AdminPalavraPage() {
       setEditTexto(data.texto);
       setEditRef(data.referencia);
       setManualMode(false);
+      toast.success("Palavra gerada com IA!");
     } catch (e) {
       console.error(e);
-      alert("Erro ao gerar palavra com IA. Tente novamente.");
+      toast.error("Erro ao gerar palavra com IA.");
     }
     setGeneratingAI(false);
   };

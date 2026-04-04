@@ -15,6 +15,7 @@ import {
   query,
   orderBy
 } from "firebase/firestore";
+import { toast } from "sonner";
 
 interface Sede {
   id: string;
@@ -75,7 +76,7 @@ export default function AdminSedesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim()) {
-      alert("Nome da sede é obrigatório");
+      toast.error("Nome da sede é obrigatório");
       return;
     }
 
@@ -87,7 +88,7 @@ export default function AdminSedesPage() {
           endereco: endereco.trim(),
           active,
         });
-        alert("Sede atualizada com sucesso!");
+        toast.success("Sede atualizada com sucesso!");
       } else {
         await addDoc(collection(db, "sedes"), {
           nome: nome.trim(),
@@ -95,12 +96,12 @@ export default function AdminSedesPage() {
           active: true,
           createdAt: new Date(),
         });
-        alert("Sede criada com sucesso!");
+        toast.success("Sede criada com sucesso!");
       }
       closeModal();
     } catch (error) {
       console.error("Erro ao salvar sede:", error);
-      alert("Erro ao salvar sede.");
+      toast.error("Erro ao salvar sede.");
     } finally {
       setSaving(false);
     }
@@ -111,10 +112,10 @@ export default function AdminSedesPage() {
 
     try {
       await deleteDoc(doc(db, "sedes", sede.id));
-      alert("Sede excluída.");
+      toast.success("Sede excluída.");
     } catch (error) {
       console.error("Erro ao excluir:", error);
-      alert("Erro ao excluir sede.");
+      toast.error("Erro ao excluir sede.");
     }
   };
 

@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, query, where, onSnapshot, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function OracoesPage() {
   const { user, profile, loading } = useAuth();
@@ -57,10 +58,10 @@ export default function OracoesPage() {
       });
       
       setPedido(""); // Limpa o textarea após sucesso
-      alert("Seu pedido foi enviado! Estaremos orando por você.");
+      toast.success("Seu pedido foi enviado! Estaremos orando por você.");
     } catch (e) {
       console.error("Erro ao enviar oração:", e);
-      alert("Ops, erro ao enviar o pedido. Tente novamente mais tarde.");
+      toast.error("Erro ao enviar o pedido. Tente novamente.");
     }
     
     setIsSending(false);
@@ -72,7 +73,7 @@ export default function OracoesPage() {
       await deleteDoc(doc(db, "oracoes", id));
     } catch (e) {
       console.error("Erro ao excluir oração:", e);
-      alert("Não foi possível excluir o pedido. Tente novamente mais tarde.");
+      toast.error("Não foi possível excluir o pedido.");
     }
   };
 

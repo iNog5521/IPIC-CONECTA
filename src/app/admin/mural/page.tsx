@@ -15,6 +15,7 @@ import {
   onSnapshot,
   serverTimestamp 
 } from "firebase/firestore";
+import { toast } from "sonner";
 
 
 interface Aviso {
@@ -111,7 +112,7 @@ export default function AdminMuralPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !excerpt || !imageFile) {
-      alert("Por favor, preencha todos os campos e selecione uma imagem.");
+      toast.error("Por favor, preencha todos os campos e selecione uma imagem.");
       return;
     }
 
@@ -155,14 +156,11 @@ export default function AdminMuralPage() {
       // Reset & Close
       setIsModalOpen(false);
       resetForm();
-      alert("Aviso publicado com sucesso!");
+      toast.success("Aviso publicado com sucesso!");
     } catch (error: any) {
       console.error("Erro ao salvar aviso:", error);
-      let msg = "Erro ao salvar o aviso. Tente novamente.";
-      if (error.message) {
-        msg = `Erro: ${error.message}`;
-      }
-      alert(msg);
+      const msg = error.message ? `Erro: ${error.message}` : "Erro ao salvar o aviso.";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -185,10 +183,10 @@ export default function AdminMuralPage() {
       // 2. Delete from Firestore
       console.log("Excluindo documento do Firestore:", aviso.id);
       await deleteDoc(doc(db, "avisos", aviso.id));
-      console.log("Exclusão concluída com sucesso!");
+      toast.success("Aviso excluído!");
     } catch (error) {
       console.error("Erro ao excluir aviso:", error);
-      alert("Erro ao excluir aviso.");
+      toast.error("Erro ao excluir aviso.");
     }
   };
 

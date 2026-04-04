@@ -8,6 +8,7 @@ import { collection, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc, where
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { toast } from "sonner";
 
 interface Sede {
   id: string;
@@ -87,15 +88,16 @@ export default function AdminMembrosPage() {
 
   const handlePromoteDemote = async (membroId: string, currentRole: string, email: string) => {
     if (email === "inog5521@gmail.com") {
-      alert("Acesso Negado: A conta do Fundador é inalterável.");
+      toast.error("Acesso Negado: A conta do Fundador é inalterável.");
       return;
     }
     const newRole = currentRole === "admin" ? "user" : "admin";
     if (confirm(`Atenção: Deseja alterar o cargo deste membro para ${newRole.toUpperCase()}?`)) {
       try {
         await updateDoc(doc(db, "users", membroId), { role: newRole });
+        toast.success(`Cargo alterado para ${newRole.toUpperCase()}`);
       } catch (err) {
-        alert("Erro ao alterar cargo.");
+        toast.error("Erro ao alterar cargo.");
       }
     }
   };
@@ -120,11 +122,11 @@ export default function AdminMembrosPage() {
         lastMessage: message,
         lastMessageDate: new Date().toLocaleDateString("pt-BR")
       });
-      alert(`Mensagem enviada com sucesso para ${selectedMembro.nome}!`);
+      toast.success(`Mensagem enviada para ${selectedMembro.nome}!`);
       setSelectedMembro(null);
       setMessage("");
     } catch (err) {
-      alert("Erro ao enviar mensagem.");
+      toast.error("Erro ao enviar mensagem.");
     }
     setSendingMsg(false);
   };
@@ -133,8 +135,9 @@ export default function AdminMembrosPage() {
     if (!confirm("Tem certeza que deseja excluir esta mensagem do histórico?")) return;
     try {
       await deleteDoc(doc(db, "mensagens_admin", msgId));
+      toast.success("Mensagem removida do histórico.");
     } catch (err) {
-      alert("Erro ao excluir mensagem.");
+      toast.error("Erro ao excluir mensagem.");
     }
   };
 
@@ -144,14 +147,15 @@ export default function AdminMembrosPage() {
       for (const msg of mensagensEnviadas) {
         await deleteDoc(doc(db, "mensagens_admin", msg.id));
       }
+      toast.success("Histórico limpo com sucesso.");
     } catch (err) {
-      alert("Erro ao limpar histórico.");
+      toast.error("Erro ao limpar histórico.");
     }
   };
 
   const handleDeleteUser = async (membroId: string, membroEmail: string, membroNome: string) => {
     if (membroEmail === "inog5521@gmail.com") {
-      alert("Acesso Negado: O fundador não pode ser excluído.");
+      toast.error("Acesso Negado: O fundador não pode ser excluído.");
       return;
     }
     
@@ -173,10 +177,10 @@ export default function AdminMembrosPage() {
       // Then delete from Firestore
       await deleteDoc(doc(db, "users", membroId));
       
-      alert("Usuário excluído com sucesso!");
+      toast.success("Usuário excluído com sucesso!");
     } catch (err) {
       console.error(err);
-      alert("Erro ao excluir usuário.");
+      toast.error("Erro ao excluir usuário.");
     }
   };
 

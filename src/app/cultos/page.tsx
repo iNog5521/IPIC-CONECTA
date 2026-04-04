@@ -15,6 +15,7 @@ import {
   orderBy
 } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 interface Culto {
   id: string;
@@ -140,7 +141,7 @@ export default function CultosPage() {
 
   const handleConfirm = async (culto: Culto) => {
     if (!user || !profile) {
-      alert("Você precisa estar logado para confirmar presença.");
+      toast.error("Você precisa estar logado para confirmar presença.");
       return;
     }
 
@@ -157,10 +158,10 @@ export default function CultosPage() {
         sede: sedeSelecionada === "Geral" ? "Sede Central" : sedeSelecionada,
         createdAt: new Date(),
       });
-      alert("Presença confirmada! Nos vemos lá!");
+      toast.success("Presença confirmada! Nos vemos lá!");
     } catch (error) {
       console.error("Erro ao confirmar:", error);
-      alert("Erro ao confirmar presença.");
+      toast.error("Erro ao confirmar presença.");
     }
   };
 
@@ -172,10 +173,10 @@ export default function CultosPage() {
 
     try {
       await deleteDoc(doc(db, "confirmacoes", confirmacao.id));
-      alert("Confirmação cancelada.");
+      toast.success("Confirmação cancelada.");
     } catch (error) {
       console.error("Erro ao cancelar:", error);
-      alert("Erro ao cancelar confirmação.");
+      toast.error("Erro ao cancelar confirmação.");
     }
   };
 

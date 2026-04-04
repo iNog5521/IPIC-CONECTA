@@ -26,6 +26,7 @@ import { signOut, sendPasswordResetEmail, updateProfile } from "firebase/auth";
 import { doc, getDoc, updateDoc, setDoc, collection, query, onSnapshot, deleteDoc, where, orderBy } from "firebase/firestore";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
+import { toast } from "sonner";
 
 interface Sede {
   id: string;
@@ -133,10 +134,10 @@ export default function PerfilPage() {
         sede: sedeParaSalvar
       }, { merge: true });
       setShowSedeModal(false);
-      alert("Sede atualizada com sucesso!");
+      toast.success("Sede atualizada com sucesso!");
     } catch (error) {
       console.error("Erro ao atualizar sede:", error);
-      alert("Erro ao atualizar sede.");
+      toast.error("Erro ao atualizar sede.");
     }
   };
 
@@ -146,15 +147,15 @@ export default function PerfilPage() {
     try {
       await sendPasswordResetEmail(auth, user.email);
       setShowResetPasswordModal(false);
-      alert(`E-mail de redefinição de senha enviado para ${user.email}. Verifique sua caixa de entrada.`);
+      toast.success(`E-mail de redefinição enviado para ${user.email}.`);
     } catch (error: any) {
       console.error("Erro ao enviar e-mail:", error);
       if (error.code === "auth/invalid-email") {
-        alert("E-mail inválido.");
+        toast.error("E-mail inválido.");
       } else if (error.code === "auth/user-not-found") {
-        alert("Usuário não encontrado.");
+        toast.error("Usuário não encontrado.");
       } else {
-        alert("Erro ao enviar e-mail de redefinição.");
+        toast.error("Erro ao enviar e-mail de redefinição.");
       }
     }
     setResetPasswordLoading(false);
@@ -217,7 +218,7 @@ export default function PerfilPage() {
     try {
       const croppedBase64 = await getCroppedImage();
       if (!croppedBase64) {
-        alert("Erro ao processar imagem.");
+        toast.error("Erro ao processar imagem.");
         setUploadingAvatar(false);
         return;
       }
@@ -235,9 +236,9 @@ export default function PerfilPage() {
       });
 
       const data = await response.json();
-
+      
       if (data.error) {
-        alert("Erro ao uploading imagem: " + data.error);
+        toast.error("Erro ao fazer upload da imagem: " + data.error);
         return;
       }
 
@@ -248,11 +249,11 @@ export default function PerfilPage() {
       await updateDoc(doc(db, "users", user.uid), {
         photoURL: data.url
       });
-
-      alert("Foto atualizada com sucesso!");
+      
+      toast.success("Foto atualizada com sucesso!");
     } catch (error) {
       console.error("Erro ao fazer upload:", error);
-      alert("Erro ao fazer upload da imagem.");
+      toast.error("Erro ao fazer upload da imagem.");
     }
     setUploadingAvatar(false);
     if (fileInputRef.current) {
@@ -266,12 +267,12 @@ export default function PerfilPage() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Selecione uma imagem válida.");
+      toast.error("Selecione uma imagem válida.");
       return;
     }
-
+    
     if (file.size > 5 * 1024 * 1024) {
-      alert("A imagem deve ter no máximo 5MB.");
+      toast.error("A imagem deve ter no máximo 5MB.");
       return;
     }
 
@@ -288,9 +289,9 @@ export default function PerfilPage() {
       await updateDoc(doc(db, "mensagens_admin", msgId), {
         deletedAt: new Date()
       });
-      alert("Mensagem excluída do seu histórico!");
+      toast.success("Mensagem excluída!");
     } catch (error) {
-      alert("Erro ao excluir mensagem.");
+      toast.error("Erro ao excluir mensagem.");
     }
   };
 
@@ -303,8 +304,9 @@ export default function PerfilPage() {
         });
       }
       setShowMsgHistory(false);
+      toast.success("Histórico limpo!");
     } catch (error) {
-      alert("Erro ao limpar mensagens.");
+      toast.error("Erro ao limpar mensagens.");
     }
   };
 

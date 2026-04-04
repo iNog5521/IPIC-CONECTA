@@ -14,6 +14,7 @@ import {
   query,
   orderBy
 } from "firebase/firestore";
+import { toast } from "sonner";
 
 interface Culto {
   id: string;
@@ -149,7 +150,7 @@ export default function AdminAgendaPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert("Nome do culto é obrigatório");
+      toast.error("Nome do culto é obrigatório");
       return;
     }
 
@@ -164,7 +165,7 @@ export default function AdminAgendaPage() {
           sede,
           active,
         });
-        alert("Culto atualizado com sucesso!");
+        toast.success("Culto atualizado!");
       } else {
         await addDoc(collection(db, "cultos"), {
           name: name.trim(),
@@ -174,12 +175,12 @@ export default function AdminAgendaPage() {
           sede,
           active: true,
         });
-        alert("Culto criado com sucesso!");
+        toast.success("Culto criado!");
       }
       closeModal();
     } catch (error) {
       console.error("Erro ao salvar culto:", error);
-      alert("Erro ao salvar culto.");
+      toast.error("Erro ao salvar culto.");
     } finally {
       setSaving(false);
     }
@@ -190,10 +191,10 @@ export default function AdminAgendaPage() {
 
     try {
       await deleteDoc(doc(db, "cultos", culto.id));
-      alert("Culto excluído.");
+      toast.success("Culto excluído.");
     } catch (error) {
       console.error("Erro ao excluir:", error);
-      alert("Erro ao excluir culto.");
+      toast.error("Erro ao excluir culto.");
     }
   };
 
@@ -202,9 +203,10 @@ export default function AdminAgendaPage() {
 
     try {
       await deleteDoc(doc(db, "confirmacoes", confirmacao.id));
+      toast.success("Presença removida.");
     } catch (error) {
       console.error("Erro ao excluir:", error);
-      alert("Erro ao excluir.");
+      toast.error("Erro ao excluir.");
     }
   };
 

@@ -9,6 +9,7 @@ import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc, collection, query, onSnapshot } from "firebase/firestore";
 import { CalendarInput } from "@/components/ui/calendar-input";
+import { toast } from "sonner";
 
 interface Sede {
   id: string;
@@ -100,7 +101,7 @@ export default function CadastroPage() {
         console.warn("Email de verificação não enviado:", verifyError.code || verifyError.message);
       }
 
-      alert("Conta criada! Verifique seu e-mail para ativar a conta.");
+      toast.success("Conta criada! Verifique seu e-mail para ativar a conta.");
       router.push("/login?verified=pending");
     } catch (error: any) {
       console.error(error);

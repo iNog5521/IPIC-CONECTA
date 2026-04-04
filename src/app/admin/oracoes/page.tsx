@@ -5,6 +5,7 @@ import styles from "./page.module.css";
 import { CheckCircle, Trash2, MapPin, Search } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { toast } from "sonner";
 
 export default function AdminOracoesPage() {
   const [prayers, setPrayers] = useState<any[]>([]);
@@ -27,8 +28,9 @@ export default function AdminOracoesPage() {
     const newStatus = currentStatus === "Orado" ? "Pendente" : "Orado";
     try {
       await updateDoc(doc(db, "oracoes", id), { status: newStatus });
+      toast.success(`Status alterado para: ${newStatus}`);
     } catch (e) {
-      alert("Erro ao alterar status.");
+      toast.error("Erro ao alterar status.");
     }
   };
 
@@ -36,8 +38,9 @@ export default function AdminOracoesPage() {
     if (confirm("Confirmar a exclusão deste pedido de oração da base de dados?")) {
       try {
         await deleteDoc(doc(db, "oracoes", id));
+        toast.success("Pedido deletado com sucesso.");
       } catch (err) {
-        alert("Erro ao deletar.");
+        toast.error("Erro ao deletar.");
       }
     }
   };
