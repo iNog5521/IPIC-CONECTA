@@ -46,7 +46,10 @@ interface MensagemAdmin {
 }
 
 export default function PerfilPage() {
-  const { user, profile, loading, profileFetched } = useAuth();
+  const { user, profile, loading } = useAuth();
+  // Spinner local: mostra enquanto user está logado mas profile ainda não chegou.
+  // Timeout de 3s como safety net para não travar se o Firestore demorar.
+  const [profileTimeout, setProfileTimeout] = useState(false);
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [showSedeModal, setShowSedeModal] = useState(false);
   const [newSede, setNewSede] = useState("");
@@ -65,6 +68,14 @@ export default function PerfilPage() {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (user && !profile) {
+      setProfileTimeout(false);
+      const timer = setTimeout(() => setProfileTimeout(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.uid]);
 
   useEffect(() => {
     const q = query(collection(db, "sedes"));
@@ -289,10 +300,9 @@ export default function PerfilPage() {
     );
   }
 
-  // Usuário autenticado mas perfil ainda não chegou do Firestore.
-  // Isso acontece na navegação SPA (router.push) porque o router.push
-  // executa antes do onAuthStateChanged disparar o onSnapshot.
-  if (user && !profileFetched) {
+  // Usuário autenticado mas perfil ainda não chegou do Firestore (navegação SPA).
+  // O onSnapshot atualizará profile em breve. Timeout de 3s como safety net.
+  if (user && !profile && !profileTimeout) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
