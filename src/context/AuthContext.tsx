@@ -9,18 +9,23 @@ interface AuthContextType {
   user: User | null;
   profile: any | null;
   loading: boolean;
+  // true assim que o onSnapshot disparar pela primeira vez para o usuário atual.
+  // Usado para distinguir "perfil carregando" de "perfil não existe".
+  profileFetched: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
+  profileFetched: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileFetched, setProfileFetched] = useState(false);
 
   useEffect(() => {
     if (!auth) {
@@ -31,14 +36,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let unsubProfile: (() => void) | undefined;
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      // Sempre reseta para loading=true no início de cada mudança de estado.
-      // Isso garante que nenhuma página renderize com dados desatualizados
-      // enquanto aguardamos o onSnapshot retornar o perfil do Firestore.
-      setLoading(true);
-
       // Founder não precisa de verificação de e-mail
       const isFounder = fbUser?.email?.toLowerCase() === 'inog5521@gmail.com';
-      
+
       if (fbUser && !fbUser.emailVerified && !isFounder) {
         // Se o usuário está no fluxo de cadastro, NÃO interromper.
         // O onAuthStateChanged dispara imediatamente após createUserWithEmailAndPassword,
@@ -47,6 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (typeof window !== 'undefined' && window.location.pathname === '/cadastro') {
           setUser(fbUser);
           setProfile(null);
+          setProfileFetched(false);
           setLoading(false);
           return; // Deixa o fluxo de cadastro concluir normalmente
         }
@@ -55,26 +56,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await auth.signOut();
         setUser(null);
         setProfile(null);
+        setProfileFetched(false);
         setLoading(false);
         window.location.href = "/login?verified=false";
         return;
       }
-      
+
       setUser(fbUser);
-      
+
       if (unsubProfile) {
         unsubProfile();
         unsubProfile = undefined;
       }
-      
+
       if (fbUser) {
+        // Novo usuário autenticado: resetar o flag enquanto o perfil carrega
+        setProfileFetched(false);
+
         // Força a liberação da catraca caso seja o usuário Mestre
         if (fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
           document.cookie = "admin_session=true; path=/; max-age=86400";
         }
-
-        // Nota: setLoading(true) já foi chamado no topo do callback.
-        // O setLoading(false) será chamado pelo onSnapshot quando os dados chegarem.
 
         try {
           const docRef = doc(db, "users", fbUser.uid);
@@ -82,7 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (docSnap.exists()) {
               const data = docSnap.data();
               setProfile(data);
-              
+
               if (data.role === 'admin' || data.role === 'owner' || fbUser.email?.toLowerCase() === 'inog5521@gmail.com') {
                 document.cookie = "admin_session=true; path=/; max-age=86400";
               } else {
@@ -92,17 +94,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
               setProfile(null);
             }
+            // Marca que o Firestore já respondeu ao menos uma vez para este usuário
+            setProfileFetched(true);
             setLoading(false);
           }, (error) => {
             console.error("Erro ao escutar perfil em tempo real:", error);
+            setProfileFetched(true);
             setLoading(false);
           });
         } catch (error) {
           console.error("Erro na referência do perfil:", error);
+          setProfileFetched(true);
           setLoading(false);
         }
       } else {
         setProfile(null);
+        setProfileFetched(false);
         document.cookie = "admin_session=; path=/; max-age=0";
         setLoading(false);
       }
@@ -115,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileFetched }}>
       {!loading && children}
     </AuthContext.Provider>
   );

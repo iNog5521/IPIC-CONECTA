@@ -46,7 +46,7 @@ interface MensagemAdmin {
 }
 
 export default function PerfilPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, profileFetched } = useAuth();
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [showSedeModal, setShowSedeModal] = useState(false);
   const [newSede, setNewSede] = useState("");
@@ -282,6 +282,17 @@ export default function PerfilPage() {
   };
 
   if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+      </div>
+    );
+  }
+
+  // Usuário autenticado mas perfil ainda não chegou do Firestore.
+  // Isso acontece na navegação SPA (router.push) porque o router.push
+  // executa antes do onAuthStateChanged disparar o onSnapshot.
+  if (user && !profileFetched) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
