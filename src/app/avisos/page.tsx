@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
-import { ChevronRight, Calendar, MapPin, Loader2, Info } from "lucide-react";
+import { ChevronRight, Calendar, MapPin, Loader2, Info, X } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +23,7 @@ export default function MuralPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [selectedAviso, setSelectedAviso] = useState<Aviso | null>(null);
 
   useEffect(() => {
     if (!db) return;
@@ -125,13 +126,43 @@ export default function MuralPage() {
                 <h2 className={styles.avisoTitle}>{aviso.title}</h2>
                 <p className={styles.avisoExcerpt}>{aviso.excerpt}</p>
                 <div className={styles.cardFooter}>
-                  <button className={styles.readMore}>
+                  <button className={styles.readMore} onClick={() => setSelectedAviso(aviso)}>
                     Ler mais <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal de Detalhes do Aviso */}
+      {selectedAviso && (
+        <div className={styles.modalOverlay} onClick={() => setSelectedAviso(null)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.closeBtn} onClick={() => setSelectedAviso(null)}>
+              <X size={24} />
+            </button>
+            
+            {selectedAviso.imageUrl && (
+              <img src={selectedAviso.imageUrl} alt="" className={styles.modalImage} />
+            )}
+            
+            <div className={styles.modalMeta}>
+              <span className={styles.categoryBadge}>{selectedAviso.category}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Calendar size={14} /> {formatDate(selectedAviso.createdAt)}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={14} /> {selectedAviso.sede}
+              </span>
+            </div>
+
+            <h2 className={styles.modalTitle}>{selectedAviso.title}</h2>
+            <div className={styles.modalText}>
+              {selectedAviso.excerpt}
+            </div>
+          </div>
         </div>
       )}
     </div>

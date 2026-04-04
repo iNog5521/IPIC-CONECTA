@@ -56,9 +56,9 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Confirmações: qualquer usuário logado pode ler e criar
+    // Confirmações: qualquer usuário pode ler (para o contador público), mas só logados podem criar
     match /confirmacoes/{confirmId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow create: if request.auth != null;
       allow delete: if request.auth != null && 
         resource.data.userId == request.auth.uid;

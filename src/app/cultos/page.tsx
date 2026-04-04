@@ -11,8 +11,7 @@ import {
   doc, 
   query, 
   where,
-  onSnapshot,
-  orderBy
+  onSnapshot
 } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -55,11 +54,11 @@ export default function CultosPage() {
     onConfirm: () => {},
   });
 
+  // 1. Listener de Cultos (Público)
   useEffect(() => {
     const q = query(collection(db, "cultos"));
-    let unsub: () => void;
     
-    unsub = onSnapshot(q, 
+    const unsub = onSnapshot(q, 
       (snapshot) => {
         const docs = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -78,13 +77,18 @@ export default function CultosPage() {
         setLoadingCultos(false);
       },
       (err) => {
-        setCultosError(err.code);
+        console.error("Erro ao carregar cultos:", err);
+        // Só travamos se for erro crítico. Se for erro de permissão (inesperado aqui), silenciamos.
+        if (err.code !== "permission-denied") {
+          setCultosError(err.code);
+        }
         setLoadingCultos(false);
       }
     );
     return () => unsub();
   }, []);
 
+  // 2. Listener de Sedes (Público)
   useEffect(() => {
     const q = query(collection(db, "sedes"), where("active", "==", true));
     const unsub = onSnapshot(q, (snapshot) => {
@@ -93,12 +97,18 @@ export default function CultosPage() {
         ...doc.data()
       })) as Sede[];
       setSedes(docs);
-    }, (err) => { /* silenciar */ });
+    }, (err) => { 
+      console.warn("Erro no listener de sedes (silenciado):", err);
+    });
     return () => unsub();
   }, []);
 
+  // 3. Listener de Confirmações do Usuário (Logado)
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoadingConfirmacoes(false);
+      return;
+    }
 
     const q = query(collection(db, "confirmacoes"), where("userId", "==", user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -108,12 +118,17 @@ export default function CultosPage() {
       })) as Confirmacao[];
       setConfirmacoes(docs);
       setLoadingConfirmacoes(false);
-    }, (err) => { /* silenciar */ });
+    }, (err) => { 
+      console.warn("Erro no listener de confirmações do usuário:", err);
+      setLoadingConfirmacoes(false);
+    });
 
     return () => unsubscribe();
   }, [user]);
 
+  // 4. Listener Geral de Confirmações (Para o Contador) - Agora mais robusto
   useEffect(() => {
+    // Tenta carregar todas as confirmações para o contador
     const q = query(collection(db, "confirmacoes"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
@@ -121,7 +136,11 @@ export default function CultosPage() {
         ...doc.data()
       })) as Confirmacao[];
       setTodosConfirmados(docs);
-    }, (err) => { /* silenciar */ });
+    }, (err) => { 
+      // Se falhar (ex: deslogado), apenas silenciamos e o contador fica em zero.
+      // Isso evita que a página trave.
+      console.log("Acesso ao contador global restrito (modo visitante).");
+    });
 
     return () => unsubscribe();
   }, []);
@@ -184,8 +203,8 @@ export default function CultosPage() {
 
   if (loadingCultos) {
     return (
-      <div className={styles.container} style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Carregando...</p>
+      <div className={styles.container} style={{ padding: '4rem', textAlign: 'center' }}>
+        <p style={{ color: 'var(--text-muted)' }}>Carregando programação...</p>
       </div>
     );
   }
@@ -193,7 +212,7 @@ export default function CultosPage() {
   if (cultosError) {
     return (
       <div className={styles.container} style={{ padding: '2rem', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Faça login para ver a programação.</p>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Sincronizando com o servidor...</p>
       </div>
     );
   }
@@ -273,7 +292,8 @@ export default function CultosPage() {
                       WebkitLineClamp: 2, 
                       WebkitBoxOrient: 'vertical', 
                       overflow: 'hidden',
-                      margin: '0 0 0.5rem 0'
+                      margin: '0 0 0.5rem 0',
+                      whiteSpace: 'pre-wrap'
                     }}>
                       {culto.description || "Sem descrição"}
                     </p>
@@ -289,9 +309,9 @@ export default function CultosPage() {
                       <MapPin size={12} />
                       {culto.sede === "Geral" ? "Todas as Sedes" : culto.sede}
                     </p>
-                    {(profile?.role === 'admin' || profile?.role === 'owner') && getConfirmadosCount(culto.name) > 0 && (
-                      <p style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>
-                        {getConfirmadosCount(culto.name)} confirmado(s)
+                    {getConfirmadosCount(culto.name) > 0 && (
+                      <p style={{ fontSize: '11px', color: '#22c55e', marginTop: '4.5rem' }}>
+                         {getConfirmadosCount(culto.name)} {getConfirmadosCount(culto.name) === 1 ? "pessoa confirmada" : "pessoas confirmadas"}
                       </p>
                     )}
                   </div>
@@ -300,7 +320,7 @@ export default function CultosPage() {
                       isConfirmed(culto.name) ? (
                         <button 
                           className={styles.confirmBtn}
-                          style={{ background: '#ef4444' }}
+                          style={{ background: '#ef4444', color: 'white' }}
                           onClick={() => handleCancel(culto.name)}
                         >
                           Cancelar
@@ -315,7 +335,7 @@ export default function CultosPage() {
                       )
                     )}
                     {!user && (
-                      <span style={{ fontSize: '12px', color: '#888' }}>Login necessário</span>
+                      <span style={{ fontSize: '10px', color: '#888', textAlign: 'center', marginBottom: '4px' }}>Entrar para confirmar</span>
                     )}
                     <button 
                       onClick={() => setSelectedCulto(culto)}
@@ -340,10 +360,10 @@ export default function CultosPage() {
         })}
       </div>
 
-      {profile?.role === 'admin' && todosConfirmados.length > 0 && (
+      {(profile?.role === 'admin' || profile?.role === 'owner') && todosConfirmados.length > 0 && (
         <button 
           className={styles.confirmBtn}
-          style={{ marginTop: '20px', background: '#6366f1' }}
+          style={{ marginTop: '20px', background: '#6366f1', color: 'white', width: '100%', padding: '1rem' }}
           onClick={() => setShowConfirmados(true)}
         >
           Ver lista de confirmados ({todosConfirmados.length})
@@ -354,7 +374,7 @@ export default function CultosPage() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent} style={{ maxHeight: '80vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2>Lista de Confirmados</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Lista de Confirmados</h2>
               <button onClick={() => setShowConfirmados(false)}><X size={20} /></button>
             </div>
             {Object.entries(todosConfirmados.reduce((acc, c) => {
@@ -363,12 +383,12 @@ export default function CultosPage() {
               return acc;
             }, {} as Record<string, Confirmacao[]>)).map(([cultoId, confirmados]) => (
               <div key={cultoId} style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '14px', color: '#6366f1', marginBottom: '8px' }}>
+                <h3 style={{ fontSize: '14px', color: '#6366f1', marginBottom: '8px', fontWeight: '700' }}>
                   {cultoId} ({confirmados.length})
                 </h3>
                 {confirmados.map((c, i) => (
-                  <div key={i} style={{ padding: '8px', borderBottom: '1px solid #eee', fontSize: '14px' }}>
-                    {c.userName} ({c.userEmail})
+                  <div key={i} style={{ padding: '8px', borderBottom: '1px solid #eee', fontSize: '13px', color: 'var(--text-primary)' }}>
+                    {c.userName} <span style={{ color: '#888', fontSize: '11px' }}>({c.userEmail})</span>
                   </div>
                 ))}
               </div>
@@ -377,34 +397,37 @@ export default function CultosPage() {
           </div>
         )}
 
-      {/* Modal de Detalhes do Culto */}
+      {/* Modal de Detalhes do Culto com pre-wrap */}
       {selectedCulto && (
         <div 
           className={styles.modalOverlay}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
           onClick={() => setSelectedCulto(null)}
         >
           <div 
             className={styles.modalContent}
-            style={{ backgroundColor: 'white', width: '100%', maxWidth: '400px', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)' }}>{selectedCulto.name}</h2>
-              <button onClick={() => setSelectedCulto(null)}><X size={20} /></button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--primary)', lineHeight: '1.2' }}>{selectedCulto.name}</h2>
+              <button onClick={() => setSelectedCulto(null)} style={{ color: 'var(--text-muted)' }}><X size={24} /></button>
             </div>
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Calendar size={14} /> {selectedCulto.day}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={14} /> {selectedCulto.time}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={14} /> {selectedCulto.sede}</span>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Calendar size={14} /> {selectedCulto.day}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> {selectedCulto.time}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={14} /> {selectedCulto.sede}</span>
             </div>
-            <p style={{ color: 'var(--text-primary)', lineHeight: '1.6' }}>{selectedCulto.description}</p>
+
+            <p style={{ color: 'var(--text-primary)', lineHeight: '1.7', whiteSpace: 'pre-wrap', marginBottom: '2rem' }}>
+              {selectedCulto.description || "Nenhuma descrição detalhada disponível."}
+            </p>
+
             {user && !loadingConfirmacoes && (
-              <div style={{ marginTop: '1.5rem' }}>
+              <div style={{ marginTop: 'auto' }}>
                 {isConfirmed(selectedCulto.name) ? (
                   <button 
                     className={styles.confirmBtn}
-                    style={{ width: '100%', background: '#ef4444' }}
+                    style={{ width: '100%', background: '#ef4444', color: 'white', padding: '1rem' }}
                     onClick={() => { handleCancel(selectedCulto.name); setSelectedCulto(null); }}
                   >
                     Cancelar Presença
@@ -412,7 +435,7 @@ export default function CultosPage() {
                 ) : (
                   <button 
                     className={styles.confirmBtn}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', padding: '1rem' }}
                     onClick={() => { handleConfirm(selectedCulto); setSelectedCulto(null); }}
                   >
                     Confirmar Presença

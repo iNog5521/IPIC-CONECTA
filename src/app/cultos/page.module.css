@@ -185,6 +185,7 @@
 .cultoDetails p {
   font-size: 0.8rem;
   color: var(--text-muted);
+  white-space: pre-wrap;
 }
 
 .confirmBtn {
