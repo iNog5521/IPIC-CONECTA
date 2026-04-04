@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { Sede, Culto, Confirmacao } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
 
 
 
@@ -38,6 +39,21 @@ export default function CultosPage() {
   const [showConfirmados, setShowConfirmados] = useState(false);
   const [todosConfirmados, setTodosConfirmados] = useState<Confirmacao[]>([]);
   const [selectedCulto, setSelectedCulto] = useState<Culto | null>(null);
+
+  // Estados do Modal de Confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const q = query(collection(db, "cultos"));
@@ -140,19 +156,26 @@ export default function CultosPage() {
     }
   };
 
-  const handleCancel = async (cultoId: string) => {
+  const handleCancel = (cultoId: string) => {
     const confirmacao = confirmacoes.find(c => c.cultoId === cultoId);
     if (!confirmacao) return;
 
-    if (!confirm("Tem certeza que deseja cancelar sua confirmação?")) return;
-
-    try {
-      await deleteDoc(doc(db, "confirmacoes", confirmacao.id));
-      toast.success("Confirmação cancelada.");
-    } catch (error) {
-      console.error("Erro ao cancelar:", error);
-      toast.error("Erro ao cancelar confirmação.");
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Cancelar Presença",
+      message: "Tem certeza que deseja cancelar sua confirmação de presença neste culto?",
+      isDestructive: true,
+      confirmText: "Sim, Cancelar",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "confirmacoes", confirmacao.id));
+          toast.success("Confirmação cancelada.");
+        } catch (error) {
+          console.error("Erro ao cancelar:", error);
+          toast.error("Erro ao cancelar confirmação.");
+        }
+      }
+    });
   };
 
   const getConfirmadosCount = (cultoId: string) => {
@@ -400,6 +423,17 @@ export default function CultosPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação Customizado */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }
