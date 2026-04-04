@@ -101,7 +101,7 @@ export default function Home() {
           <div className={styles.sectionHeader}>
             <Calendar size={18} className={styles.sectionIcon} />
             <h2>Próximos Cultos</h2>
-            <Link href="/cultos" className={styles.seeAll}>Ver todos</Link>
+            <Link href="/cultos" className={styles.seeAll} prefetch={false}>Ver todos</Link>
           </div>
           
           {cultos.length === 0 ? (

@@ -10,6 +10,7 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { toast } from "sonner";
 import { Sede, UserProfile } from "@/types";
+import ConfirmModal from "@/components/ConfirmModal";
 
 
 
@@ -41,6 +42,21 @@ export default function AdminMembrosPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [mensagensEnviadas, setMensagensEnviadas] = useState<MensagemAdmin[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Estados do Modal de Confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const q = query(collection(db, "users"));
@@ -82,20 +98,27 @@ export default function AdminMembrosPage() {
     return () => unsub();
   }, [showHistory]);
 
-  const handlePromoteDemote = async (membroId: string, currentRole: string, email: string) => {
+  const handlePromoteDemote = (membroId: string, currentRole: string, email: string) => {
     if (email === "inog5521@gmail.com") {
       toast.error("Acesso Negado: A conta do Fundador é inalterável.");
       return;
     }
     const newRole = currentRole === "admin" ? "user" : "admin";
-    if (confirm(`Atenção: Deseja alterar o cargo deste membro para ${newRole.toUpperCase()}?`)) {
-      try {
-        await updateDoc(doc(db, "users", membroId), { role: newRole });
-        toast.success(`Cargo alterado para ${newRole.toUpperCase()}`);
-      } catch (err) {
-        toast.error("Erro ao alterar cargo.");
+    
+    setConfirmModal({
+      isOpen: true,
+      title: "Alterar Cargo",
+      message: `Atenção: Deseja alterar o cargo deste membro para ${newRole.toUpperCase()}?`,
+      confirmText: "Alterar",
+      onConfirm: async () => {
+        try {
+          await updateDoc(doc(db, "users", membroId), { role: newRole });
+          toast.success(`Cargo alterado para ${newRole.toUpperCase()}`);
+        } catch (err) {
+          toast.error("Erro ao alterar cargo.");
+        }
       }
-    }
+    });
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -127,57 +150,78 @@ export default function AdminMembrosPage() {
     setSendingMsg(false);
   };
 
-  const handleDeleteMensagem = async (msgId: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta mensagem do histórico?")) return;
-    try {
-      await deleteDoc(doc(db, "mensagens_admin", msgId));
-      toast.success("Mensagem removida do histórico.");
-    } catch (err) {
-      toast.error("Erro ao excluir mensagem.");
-    }
-  };
-
-  const handleClearAllHistory = async () => {
-    if (!confirm("ATENÇÃO: Isso excluirá TODAS as mensagens do histórico. Continuar?")) return;
-    try {
-      for (const msg of mensagensEnviadas) {
-        await deleteDoc(doc(db, "mensagens_admin", msg.id));
+  const handleDeleteMensagem = (msgId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Excluir Mensagem",
+      message: "Tem certeza que deseja excluir esta mensagem do histórico?",
+      isDestructive: true,
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "mensagens_admin", msgId));
+          toast.success("Mensagem removida do histórico.");
+        } catch (err) {
+          toast.error("Erro ao excluir mensagem.");
+        }
       }
-      toast.success("Histórico limpo com sucesso.");
-    } catch (err) {
-      toast.error("Erro ao limpar histórico.");
-    }
+    });
   };
 
-  const handleDeleteUser = async (membroId: string, membroEmail: string, membroNome: string) => {
+  const handleClearAllHistory = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Limpar Todo o Histórico",
+      message: "ATENÇÃO: Isso excluirá TODAS as mensagens do histórico. Continuar?",
+      isDestructive: true,
+      confirmText: "Limpar Tudo",
+      onConfirm: async () => {
+        try {
+          for (const msg of mensagensEnviadas) {
+            await deleteDoc(doc(db, "mensagens_admin", msg.id));
+          }
+          toast.success("Histórico limpo com sucesso.");
+        } catch (err) {
+          toast.error("Erro ao limpar histórico.");
+        }
+      }
+    });
+  };
+
+  const handleDeleteUser = (membroId: string, membroEmail: string, membroNome: string) => {
     if (membroEmail === "inog5521@gmail.com") {
       toast.error("Acesso Negado: O fundador não pode ser excluído.");
       return;
     }
     
-    if (!confirm(`⚠️ ATENÇÃO!\n\nVocê está prestes a excluir o usuário:\n\n${membroNome} (${membroEmail})\n\nEsta ação é IRREVERSÍVEL! Todos os dados deste usuário serão apagados.\n\nTem certeza que deseja continuar?`)) {
-      return;
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "EXCLUIR USUÁRIO",
+      message: `⚠️ ATENÇÃO!\n\nVocê está prestes a excluir o usuário:\n\n${membroNome} (${membroEmail})\n\nEsta ação é IRREVERSÍVEL! Todos os dados deste usuário serão apagados.\n\nTem certeza que deseja continuar?`,
+      isDestructive: true,
+      confirmText: "Excluir Definitivamente",
+      onConfirm: async () => {
+        try {
+          // First delete from Auth via API
+          const response = await fetch(`/api/delete-user?userId=${membroId}`, {
+            method: "DELETE"
+          });
 
-    try {
-      // First delete from Auth via API
-      const response = await fetch(`/api/delete-user?userId=${membroId}`, {
-        method: "DELETE"
-      });
+          if (!response.ok) {
+            const error = await response.json();
+            console.error("Erro ao excluir do Auth:", error);
+          }
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("Erro ao excluir do Auth:", error);
+          // Then delete from Firestore
+          await deleteDoc(doc(db, "users", membroId));
+          
+          toast.success("Usuário excluído com sucesso!");
+        } catch (err) {
+          console.error(err);
+          toast.error("Erro ao excluir usuário.");
+        }
       }
-
-      // Then delete from Firestore
-      await deleteDoc(doc(db, "users", membroId));
-      
-      toast.success("Usuário excluído com sucesso!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao excluir usuário.");
-    }
+    });
   };
 
   // Filtro
@@ -442,6 +486,17 @@ export default function AdminMembrosPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação Customizado */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }

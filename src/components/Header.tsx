@@ -9,11 +9,11 @@ const Header = () => {
   return (
     <header className={styles.header}>
       <div className={styles.container}>
-        <Link href="/" className={styles.logo}>
+        <Link href="/" className={styles.logo} prefetch={false}>
           <span className={styles.ipic}>IPIC</span>
           <span className={styles.conecta}>CONECTA</span>
         </Link>
-        <Link href="/perfil" className={styles.profileIcon} aria-label="Perfil do Usuário">
+        <Link href="/perfil" className={styles.profileIcon} aria-label="Perfil do Usuário" prefetch={false}>
           <User size={24} />
         </Link>
       </div>

@@ -26,6 +26,7 @@ const BottomNav = () => {
             <Link 
               key={item.name} 
               href={item.path} 
+              prefetch={false}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
             >
               <item.icon size={22} />

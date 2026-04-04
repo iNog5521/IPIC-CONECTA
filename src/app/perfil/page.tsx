@@ -27,6 +27,7 @@ import { doc, getDoc, updateDoc, setDoc, collection, query, onSnapshot, deleteDo
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { toast } from "sonner";
+import ConfirmModal from "@/components/ConfirmModal";
 
 interface Sede {
   id: string;
@@ -67,6 +68,21 @@ export default function PerfilPage() {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
+
+  // Estados do Modal de Confirmação customizado
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const q = query(collection(db, "sedes"));
@@ -257,31 +273,47 @@ export default function PerfilPage() {
     setCrop(undefined);
   };
 
-  const handleDeleteMinhaMensagem = async (msgId: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta mensagem? Ela será removida do seu histórico mas permanecerá no painel admin.")) return;
-    try {
-      await updateDoc(doc(db, "mensagens_admin", msgId), {
-        deletedAt: new Date()
-      });
-      toast.success("Mensagem excluída!");
-    } catch (error) {
-      toast.error("Erro ao excluir mensagem.");
-    }
+  const handleDeleteMinhaMensagem = (msgId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Excluir Mensagem",
+      message: "Tem certeza que deseja excluir esta mensagem? Ela será removida do seu histórico mas permanecerá no painel admin.",
+      isDestructive: true,
+      confirmText: "Excluir",
+      onConfirm: async () => {
+        try {
+          await updateDoc(doc(db, "mensagens_admin", msgId), {
+            deletedAt: new Date()
+          });
+          toast.success("Mensagem excluída!");
+        } catch (error) {
+          toast.error("Erro ao excluir mensagem.");
+        }
+      }
+    });
   };
 
-  const handleClearAllMinhasMensagens = async () => {
-    if (!confirm("ATENÇÃO: Isso excluirá TODAS as suas mensagens do seu histórico. Elas permanecerão no painel admin. Continuar?")) return;
-    try {
-      for (const msg of minhasMensagens) {
-        await updateDoc(doc(db, "mensagens_admin", msg.id), {
-          deletedAt: new Date()
-        });
+  const handleClearAllMinhasMensagens = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Limpar Histórico",
+      message: "ATENÇÃO: Isso excluirá TODAS as suas mensagens do seu histórico. Elas permanecerão no painel admin. Continuar?",
+      isDestructive: true,
+      confirmText: "Limpar Tudo",
+      onConfirm: async () => {
+        try {
+          for (const msg of minhasMensagens) {
+            await updateDoc(doc(db, "mensagens_admin", msg.id), {
+              deletedAt: new Date()
+            });
+          }
+          setShowMsgHistory(false);
+          toast.success("Histórico limpo!");
+        } catch (error) {
+          toast.error("Erro ao limpar mensagens.");
+        }
       }
-      setShowMsgHistory(false);
-      toast.success("Histórico limpo!");
-    } catch (error) {
-      toast.error("Erro ao limpar mensagens.");
-    }
+    });
   };
 
   if (loading || profileLoading) {
@@ -728,6 +760,17 @@ export default function PerfilPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação Customizado */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDestructive={confirmModal.isDestructive}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+      />
     </div>
   );
 }
