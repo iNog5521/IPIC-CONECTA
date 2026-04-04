@@ -296,6 +296,15 @@ export default function PerfilPage() {
           await updateDoc(doc(db, "mensagens_admin", msgId), {
             deletedAt: new Date()
           });
+
+          // Limpar o lastMessage do perfil do usuário para o card ficar vazio
+          if (user?.uid) {
+            await updateDoc(doc(db, "users", user.uid), {
+              lastMessage: "",
+              lastMessageDate: ""
+            });
+          }
+
           toast.success("Mensagem excluída!");
         } catch (error) {
           toast.error("Erro ao excluir mensagem.");
@@ -318,6 +327,15 @@ export default function PerfilPage() {
               deletedAt: new Date()
             });
           }
+
+          // Limpar o lastMessage do perfil do usuário para o card ficar vazio
+          if (user?.uid) {
+            await updateDoc(doc(db, "users", user.uid), {
+              lastMessage: "",
+              lastMessageDate: ""
+            });
+          }
+
           setShowMsgHistory(false);
           toast.success("Histórico limpo!");
         } catch (error) {
