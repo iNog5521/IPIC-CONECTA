@@ -3,65 +3,57 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Usuários: qualquer usuário logado pode criar e ler, mas só pode editar o próprio ou se for administrador
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      
-      // CRIAÇÃO: O próprio usuário cria seu perfil.
-      // Regra: Deve ser o próprio UID e o cargo deve ser 'user' (ou 'owner' se for o seu e-mail)
-      allow create: if request.auth != null && request.auth.uid == userId && (
-        (request.resource.data.email.lower() == 'inog5521@gmail.com' && request.resource.data.role == 'owner') ||
-        (request.resource.data.email.lower() != 'inog5521@gmail.com' && request.resource.data.role == 'user')
-      );
-      
-      // ATUALIZAÇÃO: 
-      // 1. O dono do perfil pode atualizar, MAS NÃO pode mudar o cargo (role), email ou uid.
-      // 2. Administradores podem atualizar tudo.
-      allow update: if request.auth != null && (
-        (request.auth.uid == userId && 
-         request.resource.data.role == resource.data.role && 
-         request.resource.data.email == resource.data.email &&
-         request.resource.data.uid == resource.data.uid) || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin']
-      );
-      
-      allow delete: if request.auth != null && 
+    // Regra Global: Apenas Administradores e Owners podem ler/escrever em coleções protegidas
+    function isAdmin() {
+      return request.auth != null && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
-    
-    // Sedes: leitura pública
-    match /sedes/{sedeId} {
+
+    // Modelos de Mural: Leitura pública e escrita protegida para Admins/Owners
+    match /modelos_mural/{modeloId} {
       allow read: if true;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
-    }
-    
-    // Cultos: leitura pública para todos
-    match /cultos/{cultoId} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+      allow write: if isAdmin();
     }
     
     // Avisos: leitura pública
     match /avisos/{avisoId} {
       allow read: if true;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+      allow write: if isAdmin();
     }
 
-    // Modelos de Mural: Leitura pública (igual aos Avisos) e escrita apenas para Admins/Owners
-    match /modelos_mural/{modeloId} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+    // Usuários: qualquer usuário logado pode ler, mas só pode editar o próprio ou se for administrador
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      
+      // CRIAÇÃO: O próprio usuário cria seu perfil.
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // ATUALIZAÇÃO: O dono ou Admin/Owner
+      allow update: if request.auth != null && (
+        (request.auth.uid == userId && 
+         request.resource.data.role == resource.data.role && 
+         request.resource.data.email == resource.data.email &&
+         request.resource.data.uid == resource.data.uid) || 
+        isAdmin()
+      );
+      
+      allow delete: if isAdmin();
     }
     
-    // Palavras: leitura pública
+    // Sedes, Cultos, Palavra: leitura pública
+    match /sedes/{sedeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /cultos/{cultoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
     match /palavra/{palavraId} {
       allow read: if true;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+      allow write: if isAdmin();
     }
     
     // Confirmações: qualquer usuário logado pode ler e criar
@@ -72,38 +64,38 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
     
-    // Membros: qualquer usuário logado pode ler
+    // Membros, Agenda, Orações: qualquer usuário logado pode ler
     match /membros/{membroId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+      allow write: if isAdmin();
     }
     
     match /agenda/{eventId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+      allow write: if isAdmin();
     }
     
     match /oracoes/{orcaoId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+      allow write: if isAdmin();
     }
     
+    // Mensagens Admin: O dono ou Admin/Owner
     match /mensagens_admin/{msgId} {
       allow read: if request.auth != null && (
         resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin']
+        isAdmin()
       );
-      allow create: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
-      allow update: if request.auth != null && (
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
         resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin']
+        isAdmin()
       );
-      allow delete: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'admin'];
+    }
+
+    // Regra de segurança padrão para qualquer outra coleção não listada
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }
